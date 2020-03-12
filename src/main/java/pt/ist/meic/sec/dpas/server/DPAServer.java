@@ -7,6 +7,10 @@ import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,10 +33,14 @@ public class DPAServer {
     private PrivateKey privateKey;
     private PublicKey publicKey;
 
-    public DPAServer() {
+    private static ServerSocket server;
+    private static int port = 9876;
+
+    public DPAServer() throws IOException {
         loadPublicKeys();
         this.privateKey = loadPrivateKey("keys/private/priv-server.der");
         this.publicKey = loadPublicKey("keys/public/pub-server.der");
+        server = new ServerSocket(port);
     }
 
     private void loadPublicKeys() {
@@ -106,9 +114,26 @@ public class DPAServer {
         return this.clientPKs.get(index);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+
        DPAServer s = new DPAServer();
 
+        //receive multiple clients
+        while(true) {
+            try {
+                Socket inSoc = server.accept();
+                ServerThread newServerThread = new ServerThread(inSoc);
+                newServerThread.start();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+
+
+       /**
        String data = "Olá";
        List<Integer> links = Arrays.asList(1, 2, 3);
 
@@ -125,10 +150,20 @@ public class DPAServer {
        EncryptedPayload p = new EncryptedPayload(encryptedData, idKey, encryptedOperation, encryptedLinkedAnnouncements,
                signature);
        p.decrypt(s.privateKey, idKey);
+        */
     }
 
 
+    static class ServerThread extends Thread {
 
+        private Socket socket = null;
+        private ObjectOutputStream outStream = null;
+        private ObjectInputStream inStream = null;
+
+        ServerThread(Socket inSoc) {
+            socket = inSoc;
+        }
+    }
 
 
 
