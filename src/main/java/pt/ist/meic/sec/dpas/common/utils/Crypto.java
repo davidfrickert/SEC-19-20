@@ -1,9 +1,11 @@
 package pt.ist.meic.sec.dpas.common.utils;
 
 import org.apache.log4j.Logger;
-import pt.ist.meic.sec.dpas.server.DPAServer;
 
-import javax.crypto.*;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -13,7 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Crypto {
-    private final static Logger logger = Logger.getLogger(DPAServer.class);
+    private final static Logger logger = Logger.getLogger(Crypto.class);
     private final static String digestAlgorithm = "SHA-512";
 
     public static byte[] decryptBytes(byte[] message, Key key) {
