@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ArrayUtils {
+
     public static  byte[] merge(byte[] ...arrays) {
         int totalSize = Arrays.stream(arrays).map(b -> b.length).reduce(0, Integer::sum);
 
@@ -45,29 +46,4 @@ public class ArrayUtils {
             throw new IllegalStateException();
         }
     }
-
-    /*
-    public static <T extends Serializable> byte[] arrayToBytes(T[] array) {
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(array);
-            return bos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new IllegalStateException();
-        }
-    }
-
-    public static <T extends Serializable> T[] bytesToArray(byte[] bytes) {
-        try {
-            ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-            ObjectInputStream ois = new ObjectInputStream(bis);
-            return (T[]) ois.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-            throw new IllegalStateException();
-        }
-    }
-    */
 }
