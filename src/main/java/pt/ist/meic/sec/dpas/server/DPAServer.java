@@ -1,23 +1,15 @@
 package pt.ist.meic.sec.dpas.server;
 
 import org.apache.log4j.Logger;
-import pt.ist.meic.sec.dpas.common.Operation;
-import pt.ist.meic.sec.dpas.common.payloads.EncryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.PostPayload;
-import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.time.Instant;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.security.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class DPAServer {
     private final static Logger logger = Logger.getLogger(DPAServer.class);
@@ -28,33 +20,15 @@ public class DPAServer {
     private PrivateKey privateKey;
     private PublicKey publicKey;
 
-    public DPAServer() {
-        loadPublicKeys();
-        this.privateKey = KeyManager.loadPrivateKey("keys/private/priv-server.der");
-        this.publicKey = KeyManager.loadPublicKey("keys/public/pub-server.der");
+    private static ServerSocket server;
+    private static int port = 9876;
+
+    public DPAServer() throws IOException {
+        //oadPublicKeys();
+        //this.privateKey = loadPrivateKey("keys/private/priv-server.der");
+        //this.publicKey = loadPublicKey("keys/public/pub-server.der");
+        server = new ServerSocket(port);
     }
-
-    private void loadPublicKeys() {
-
-
-        try (Stream<Path> walk = Files.walk(Paths.get("keys/public/clients"))) {
-            List<String> result = walk.filter(Files::isRegularFile).map(Path::toString).collect(Collectors.toList());
-            clientPKs.addAll(result.stream().map(KeyManager::loadPublicKey).collect(Collectors.toList()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        // to remove
-        try (Stream<Path> walk = Files.walk(Paths.get("keys/private/clients"))) {
-            List<String> result = walk.filter(Files::isRegularFile).map(Path::toString).collect(Collectors.toList());
-            clientPriv.addAll(result.stream().map(KeyManager::loadPrivateKey).collect(Collectors.toList()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //
-
-    }
-
 
     private PrivateKey getPrivateKey(int index) {
         return this.clientPriv.get(index);
@@ -64,23 +38,62 @@ public class DPAServer {
         return this.clientPKs.get(index);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+
        DPAServer s = new DPAServer();
 
+        //receive multiple clients
+        while(true) {
+            try {
+                Socket inSoc = server.accept();
+                ServerThread newServerThread = new ServerThread(inSoc);
+                newServerThread.start();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+       /**
        String data = "Olá";
-       List<Integer> linkedAnnouncementIds = Arrays.asList(1, 2, 3);
-       Instant timestamp = Instant.now();
-        PublicKey idKey = s.getPublicKey(0);
+       List<Integer> links = Arrays.asList(1, 2, 3);
 
-        PostPayload postPayload = new PostPayload(data, idKey, Operation.POST, timestamp, linkedAnnouncementIds);
+       byte[] encryptedData = Crypto.encryptBytes(data.getBytes(),  s.publicKey, true);
+       PublicKey idKey = s.getPublicKey(0);
+       byte[] encryptedOperation = Crypto.encryptBytes(Operation.POST.name().getBytes(), s.publicKey, true);
+       byte[] encryptedLinkedAnnouncements = Crypto.encryptBytes(ArrayUtils.listToBytes(links), s.publicKey, false);
 
+       byte[] originalData = ArrayUtils.merge(data.getBytes(), s.getPublicKey(0).getEncoded(),
+               Operation.POST.name().getBytes(), ArrayUtils.listToBytes(links));
 
-       EncryptedPayload p =         postPayload.encrypt(s.publicKey, s.getPrivateKey(0));
-        p.decrypt(s.privateKey, idKey);
+       byte[] signature = Crypto.sign(originalData, s.getPrivateKey(0));
+
+       EncryptedPayload p = new EncryptedPayload(encryptedData, idKey, encryptedOperation, encryptedLinkedAnnouncements,
+               signature);
+       p.decrypt(s.privateKey, idKey);
+        */
     }
 
+    static class ServerThread extends Thread {
 
+        private Socket socket = null;
+        private ObjectOutputStream outStream = null;
+        private ObjectInputStream inStream = null;
 
+        ServerThread(Socket inSoc) {
+            socket = inSoc;
+        }
+
+        public void run() {
+            try{
+                outStream = new ObjectOutputStream(socket.getOutputStream());
+                inStream = new ObjectInputStream(socket.getInputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
 
 
