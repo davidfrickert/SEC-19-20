@@ -21,7 +21,6 @@ public class EncryptedPayload implements Serializable {
     private final byte[] linkedAnnouncements;
     private final byte[] timestamp;
 
-
     private final byte[] signature;
 
     public EncryptedPayload(byte[] data, PublicKey auth, byte[] op, byte[] linked, byte[] timestamp, byte[] signature) {

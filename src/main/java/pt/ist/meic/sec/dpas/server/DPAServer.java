@@ -3,8 +3,7 @@ package pt.ist.meic.sec.dpas.server;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.EncryptedPayload;
-import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
-import pt.ist.meic.sec.dpas.common.utils.Crypto;
+import pt.ist.meic.sec.dpas.common.payloads.PostPayload;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
 import java.io.IOException;
@@ -71,21 +70,13 @@ public class DPAServer {
        String data = "Olá";
        List<Integer> linkedAnnouncementIds = Arrays.asList(1, 2, 3);
        Instant timestamp = Instant.now();
+        PublicKey idKey = s.getPublicKey(0);
 
-       byte[] encryptedData = Crypto.encryptBytes(data.getBytes(),  s.publicKey, true);
-       PublicKey idKey = s.getPublicKey(0);
-       byte[] encryptedOperation = Crypto.encryptBytes(Operation.POST.name().getBytes(), s.publicKey, true);
-       byte[] encryptedLinkedAnnouncements = Crypto.encryptBytes(ArrayUtils.listToBytes(linkedAnnouncementIds), s.publicKey, false);
-       byte[] encryptedTimestamp = Crypto.encryptBytes(timestamp.toString().getBytes(), s.publicKey, true);
+        PostPayload postPayload = new PostPayload(data, idKey, Operation.POST, timestamp, linkedAnnouncementIds);
 
-       byte[] originalData = ArrayUtils.merge(data.getBytes(), ArrayUtils.listToBytes(linkedAnnouncementIds),
-               idKey.getEncoded(), Operation.POST.name().getBytes(), timestamp.toString().getBytes());
 
-       byte[] signature = Crypto.sign(originalData, s.getPrivateKey(0));
-
-       EncryptedPayload p = new EncryptedPayload(encryptedData, idKey, encryptedOperation, encryptedLinkedAnnouncements,
-               encryptedTimestamp, signature);
-       p.decrypt(s.privateKey, idKey);
+       EncryptedPayload p =         postPayload.encrypt(s.publicKey, s.getPrivateKey(0));
+        p.decrypt(s.privateKey, idKey);
     }
 
 

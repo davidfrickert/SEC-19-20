@@ -5,6 +5,7 @@ import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 
 import java.math.BigInteger;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
 
@@ -21,6 +22,11 @@ public class ReadPayload extends DecryptedPayload {
 
     public byte[] asBytes() {
         return ArrayUtils.merge(nAnnouncements.toByteArray(), super.asBytes());
+    }
+
+    @Override
+    public EncryptedPayload encrypt(PublicKey receiverKey, PrivateKey senderKey) {
+       return null;
     }
 
     public BigInteger getData() {

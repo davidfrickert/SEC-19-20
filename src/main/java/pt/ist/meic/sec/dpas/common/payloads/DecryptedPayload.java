@@ -3,6 +3,7 @@ package pt.ist.meic.sec.dpas.common.payloads;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
 
@@ -32,6 +33,8 @@ public abstract class DecryptedPayload {
     public Operation getOperation() {
         return operation;
     }
+
+    public abstract EncryptedPayload encrypt(PublicKey receiverKey, PrivateKey senderKey);
 
     public Instant getTimestamp() {
         return timestamp;

@@ -2,6 +2,7 @@ package pt.ist.meic.sec.dpas.common.payloads;
 
 import pt.ist.meic.sec.dpas.common.Operation;
 
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
 
@@ -12,6 +13,11 @@ public class RegisterPayload extends DecryptedPayload {
 
     @Override
     public Object getData() {
+        return null;
+    }
+
+    @Override
+    public EncryptedPayload encrypt(PublicKey receiverKey, PrivateKey senderKey) {
         return null;
     }
 }

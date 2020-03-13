@@ -6,6 +6,7 @@ import pt.ist.meic.sec.dpas.common.Operation;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 
 public class PayloadFactory {
@@ -17,7 +18,6 @@ public class PayloadFactory {
         switch (o)
         {
             case REGISTER:
-            default:
                 return new RegisterPayload(key, o, timestamp);
             case POST:
             case POST_GENERAL:
@@ -25,6 +25,9 @@ public class PayloadFactory {
             case READ:
             case READ_GENERAL:
                 return new ReadPayload(new BigInteger(data), key, o, timestamp);
+            default:
+                throw new IllegalStateException(o + " not expected, only " + Arrays.asList(Operation.REGISTER,
+                        Operation.POST, Operation.POST_GENERAL, Operation.READ, Operation.READ_GENERAL) + " allowed.");
         }
     }
 }
