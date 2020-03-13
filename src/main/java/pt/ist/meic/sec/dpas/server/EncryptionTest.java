@@ -69,6 +69,7 @@ public class EncryptionTest {
     public static void main(String[] args) {
        EncryptionTest s = new EncryptionTest();
 
+       s.testPOST();
 
     }
 
