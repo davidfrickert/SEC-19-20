@@ -4,9 +4,12 @@ import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.PostPayload;
+import pt.ist.meic.sec.dpas.common.payloads.ReadPayload;
+import pt.ist.meic.sec.dpas.common.payloads.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -70,6 +73,8 @@ public class EncryptionTest {
        EncryptionTest s = new EncryptionTest();
 
        s.testPOST();
+       s.testREAD();
+       s.testREGISTER();
 
     }
 
@@ -81,8 +86,31 @@ public class EncryptionTest {
 
         PostPayload postPayload = new PostPayload(data, idKey, Operation.POST, timestamp, linkedAnnouncementIds);
 
+        EncryptedPayload p = postPayload.encrypt(this.publicKey, this.getPrivateKey(0));
+        p.decrypt(this.privateKey, idKey);
+    }
 
-        EncryptedPayload p =         postPayload.encrypt(this.publicKey, this.getPrivateKey(0));
+    public void testREAD() {
+        int keyNumber = 5;
+        BigInteger n = BigInteger.ONE;
+        Instant timestamp = Instant.now();
+        PublicKey idKey = this.getPublicKey(keyNumber);
+        Operation o = Operation.READ;
+
+        ReadPayload readPayload = new ReadPayload(n, idKey, o, timestamp);
+        EncryptedPayload p = readPayload.encrypt(this.publicKey, this.getPrivateKey(keyNumber));
+        p.decrypt(this.privateKey, idKey);
+
+    }
+
+    public void testREGISTER() {
+        int keyNumber = 5;
+        Instant timestamp = Instant.now();
+        PublicKey idKey = this.getPublicKey(keyNumber);
+        Operation o = Operation.REGISTER;
+
+        RegisterPayload registerPayload = new RegisterPayload(idKey, o, timestamp);
+        EncryptedPayload p = registerPayload.encrypt(this.publicKey, this.getPrivateKey(keyNumber));
         p.decrypt(this.privateKey, idKey);
     }
 

@@ -50,10 +50,20 @@ public class EncryptedPayload implements Serializable {
 
     public DecryptedPayload decrypt(PrivateKey receiverKey, PublicKey senderKey) {
 
-        byte[] data = Crypto.decryptBytes(this.message, receiverKey);
         Operation op = Operation.fromBytes(Crypto.decryptBytes(this.operation, receiverKey));
-        List<Integer> linked = (ArrayUtils.bytesToList(Crypto.decryptBytes(this.linkedAnnouncements, receiverKey)));
         Instant timestamp = Instant.parse(new String(Crypto.decryptBytes(this.timestamp, receiverKey)));
+
+        // linked announcements is not a general parameter (only for POST/POST_GENERAL)
+        // so, it's null in other operations
+        List<Integer> linked = null;
+        if (this.linkedAnnouncements != null)
+            linked = (ArrayUtils.bytesToList(Crypto.decryptBytes(this.linkedAnnouncements, receiverKey)));
+
+        // data is not used yet on REGISTER, so, it might be null
+        byte[] data = null;
+        if (this.message != null)
+            data = Crypto.decryptBytes(this.message, receiverKey);
+
 
         DecryptedPayload dp = PayloadFactory.genPayloadFromOperation(op, data, this.senderKey, timestamp, linked);
 

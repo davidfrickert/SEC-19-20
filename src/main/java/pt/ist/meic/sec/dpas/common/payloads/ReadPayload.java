@@ -3,6 +3,7 @@ package pt.ist.meic.sec.dpas.common.payloads;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
+import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
 import java.math.BigInteger;
 import java.security.PrivateKey;
@@ -26,7 +27,17 @@ public class ReadPayload extends DecryptedPayload {
 
     @Override
     public EncryptedPayload encrypt(PublicKey receiverKey, PrivateKey senderKey) {
-       return null;
+        byte[] encryptedData = Crypto.encryptBytes(nAnnouncements.toByteArray(),  receiverKey, false);
+        PublicKey idKey = this.getSenderKey();
+        byte[] encryptedOperation = Crypto.encryptBytes(this.getOperation().name().getBytes(), receiverKey, false);
+        byte[] encryptedTimestamp = Crypto.encryptBytes(this.getTimestamp().toString().getBytes(), receiverKey, false);
+
+        byte[] originalData = this.asBytes();
+
+        byte[] signature = Crypto.sign(originalData, senderKey);
+
+        return new EncryptedPayload(encryptedData, idKey, encryptedOperation, null,
+                encryptedTimestamp, signature);
     }
 
     public BigInteger getData() {
