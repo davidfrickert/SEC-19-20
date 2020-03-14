@@ -2,10 +2,13 @@ package pt.ist.meic.sec.dpas.server;
 
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
-import pt.ist.meic.sec.dpas.common.payloads.EncryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.PostPayload;
-import pt.ist.meic.sec.dpas.common.payloads.ReadPayload;
-import pt.ist.meic.sec.dpas.common.payloads.RegisterPayload;
+import pt.ist.meic.sec.dpas.common.Status;
+import pt.ist.meic.sec.dpas.common.StatusMessage;
+import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
 import java.io.IOException;
@@ -88,6 +91,19 @@ public class EncryptionTest {
 
         EncryptedPayload p = postPayload.encrypt(this.publicKey, this.getPrivateKey(0));
         p.decrypt(this.privateKey, idKey);
+
+        testPOSTReply();
+    }
+
+    public void testPOSTReply() {
+        StatusMessage s = new StatusMessage(Status.Success, "Announcement registered with id 1-this is hardcoded test.");
+        Instant timestamp = Instant.now();
+        PublicKey idKey = this.publicKey;
+        Operation o = Operation.POST;
+
+        ACKPayload ackPayload = new ACKPayload(idKey, o, timestamp, s);
+        EncryptedPayload p = ackPayload.encrypt(this.getPublicKey(0), this.privateKey);
+        p.decrypt(this.getPrivateKey(0), idKey);
     }
 
     public void testREAD() {

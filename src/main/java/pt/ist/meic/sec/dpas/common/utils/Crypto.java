@@ -33,15 +33,17 @@ public class Crypto {
         }
     }
 
-    public static byte[] encryptBytes(byte[] message, Key key, Boolean log) {
+    public static byte[] encryptBytes(byte[] message, Key key) {
         try {
             //https://cryptosense.com/blog/why-pkcs1v1-5-encryption-should-be-put-out-of-our-misery/
             Cipher rsaCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             rsaCipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] enc = rsaCipher.doFinal(message);
+            /*
             if (log) {
                 logger.info("Encrypted message: '" + new String(message) + "'");
             }
+             */
             return enc;
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | BadPaddingException | IllegalBlockSizeException e) {
             e.printStackTrace();
@@ -80,7 +82,7 @@ public class Crypto {
     }
 
     public static List<byte[]> encryptMultiple(Key key, byte[] ...data) {
-        return Arrays.stream(data).map(a -> encryptBytes(a, key, false)).collect(Collectors.toList());
+        return Arrays.stream(data).map(a -> encryptBytes(a, key)).collect(Collectors.toList());
     }
 
 

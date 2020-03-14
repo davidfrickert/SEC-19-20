@@ -1,15 +1,12 @@
 package pt.ist.meic.sec.dpas.library;
 
 import pt.ist.meic.sec.dpas.common.Operation;
-import pt.ist.meic.sec.dpas.common.payloads.EncryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.PostPayload;
-import pt.ist.meic.sec.dpas.common.payloads.ReadPayload;
-import pt.ist.meic.sec.dpas.common.payloads.RegisterPayload;
+import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRequest;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
-import javax.persistence.criteria.CriteriaBuilder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -51,14 +48,14 @@ public class ClientLibrary {
         Instant time = Instant.now();
         Operation op = Operation.REGISTER;
 
-        byte[] encryptedOperation = Crypto.encryptBytes(op.name().getBytes(), publicKey, true);
-        byte[] encryptedTimestamp = Crypto.encryptBytes(time.toString().getBytes(), publicKey, true);
+        byte[] encryptedOperation = Crypto.encryptBytes(op.name().getBytes(), publicKey);
+        byte[] encryptedTimestamp = Crypto.encryptBytes(time.toString().getBytes(), publicKey);
         byte[] originalData = ArrayUtils.merge(null, publicKey.getEncoded(), op.name().getBytes(), null, time.toString().getBytes());
 
         byte[] signature = Crypto.sign(originalData, privateKey);
 
-        EncryptedPayload payload = new EncryptedPayload(null,
-                key, encryptedOperation, null, encryptedTimestamp, signature);
+        EncryptedPayload payload =  new EncryptedPayloadRequest(key, encryptedOperation, encryptedTimestamp, signature, null,
+                null);
 
         out.println(payload);
     }

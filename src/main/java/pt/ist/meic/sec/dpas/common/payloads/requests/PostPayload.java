@@ -1,7 +1,9 @@
-package pt.ist.meic.sec.dpas.common.payloads;
+package pt.ist.meic.sec.dpas.common.payloads.requests;
 
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
+import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
+import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
@@ -24,23 +26,23 @@ public class PostPayload extends DecryptedPayload {
     }
 
     public byte[] asBytes() {
-        return ArrayUtils.merge(announcement.getBytes(), ArrayUtils.listToBytes(linkedAnnouncements), super.asBytes());
+        return ArrayUtils.merge(announcement.getBytes(), ArrayUtils.objectToBytes(linkedAnnouncements), super.asBytes());
     }
 
     @Override
     public EncryptedPayload encrypt(PublicKey receiverKey, PrivateKey senderKey) {
-        byte[] encryptedData = Crypto.encryptBytes(announcement.getBytes(),  receiverKey, true);
+        byte[] encryptedData = Crypto.encryptBytes(announcement.getBytes(),  receiverKey);
         PublicKey idKey = this.getSenderKey();
-        byte[] encryptedOperation = Crypto.encryptBytes(this.getOperation().name().getBytes(), receiverKey, true);
-        byte[] encryptedLinkedAnnouncements = Crypto.encryptBytes(ArrayUtils.listToBytes(linkedAnnouncements), receiverKey, true);
-        byte[] encryptedTimestamp = Crypto.encryptBytes(this.getTimestamp().toString().getBytes(), receiverKey, true);
+        byte[] encryptedOperation = Crypto.encryptBytes(this.getOperation().name().getBytes(), receiverKey);
+        byte[] encryptedLinkedAnnouncements = Crypto.encryptBytes(ArrayUtils.objectToBytes(linkedAnnouncements), receiverKey);
+        byte[] encryptedTimestamp = Crypto.encryptBytes(this.getTimestamp().toString().getBytes(), receiverKey);
 
         byte[] originalData = this.asBytes();
 
         byte[] signature = Crypto.sign(originalData, senderKey);
 
-        return new EncryptedPayload(encryptedData, idKey, encryptedOperation, encryptedLinkedAnnouncements,
-                encryptedTimestamp, signature);
+        return new EncryptedPayloadRequest(idKey, encryptedOperation, encryptedTimestamp, signature, encryptedData,
+                encryptedLinkedAnnouncements);
     }
 
     public String getData() {
