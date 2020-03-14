@@ -2,9 +2,7 @@ package pt.ist.meic.sec.dpas.library;
 
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRequest;
-import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
-import pt.ist.meic.sec.dpas.common.utils.Crypto;
+import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
 import java.io.BufferedReader;
@@ -45,11 +43,12 @@ public class ClientLibrary {
 
     // not using key, but maybe we should have the client handle these instead of being in the library?
     public void register(PublicKey key) {
+
         Instant time = Instant.now();
         Operation op = Operation.REGISTER;
-
-        byte[] encryptedOperation = Crypto.encryptBytes(op.name().getBytes(), publicKey);
-        byte[] encryptedTimestamp = Crypto.encryptBytes(time.toString().getBytes(), publicKey);
+        /*
+        byte[] encryptedOperation = Crypto.encryptBytes(op.name().getBytes(), serverKey);
+        byte[] encryptedTimestamp = Crypto.encryptBytes(time.toString().getBytes(), serverKey);
         byte[] originalData = ArrayUtils.merge(null, publicKey.getEncoded(), op.name().getBytes(), null, time.toString().getBytes());
 
         byte[] signature = Crypto.sign(originalData, privateKey);
@@ -58,6 +57,12 @@ public class ClientLibrary {
                 null);
 
         out.println(payload);
+        */
+
+        // new way to do it
+        EncryptedPayload ePayload = new RegisterPayload(key, op, time).encrypt(serverKey, privateKey);
+        out.println(ePayload);
+
     }
 
     public void post(PublicKey key, String message, List<Integer> announcements) {
