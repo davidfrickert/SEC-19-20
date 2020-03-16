@@ -1,7 +1,9 @@
-package pt.ist.meic.sec.dpas.library;
+package pt.ist.meic.sec.dpas.client;
 
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
@@ -41,7 +43,6 @@ public class ClientLibrary {
         clientSocket.close();
     }
 
-    // not using key, but maybe we should have the client handle these instead of being in the library?
     public void register(PublicKey key) {
 
         Instant time = Instant.now();
@@ -65,18 +66,20 @@ public class ClientLibrary {
 
     }
 
-    public void post(PublicKey key, String message, List<Integer> announcements) {
+    public void post(PublicKey key, String message, List<BigInteger> announcements) {
         Instant time = Instant.now();
         Operation op = Operation.POST;
 
-        //TODO
+        EncryptedPayload ePayload = new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
+        out.println(ePayload);
     }
 
-    public void postGeneral(PublicKey key, String message, List<Integer> announcements) {
+    public void postGeneral(PublicKey key, String message, List<BigInteger> announcements) {
         Instant time = Instant.now();
         Operation op = Operation.POST_GENERAL;
 
-        //TODO
+        EncryptedPayload ePayload = new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
+        out.println(ePayload);
     }
 
 
@@ -84,14 +87,16 @@ public class ClientLibrary {
         Instant time = Instant.now();
         Operation op = Operation.READ;
 
-        //TODO
+        EncryptedPayload ePayload = new ReadPayload(number, key, op, time).encrypt(serverKey, privateKey);
+        out.println(ePayload);
     }
 
     public void readGeneral(BigInteger number) {
         Instant time = Instant.now();
         Operation op = Operation.READ_GENERAL;
 
-        //TODO
+        EncryptedPayload ePayload = new ReadPayload(number, null, op, time).encrypt(serverKey, privateKey);
+        out.println(ePayload);
     }
 
     public static void main(String[] args) {
