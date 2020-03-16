@@ -1,4 +1,4 @@
-package pt.ist.meic.sec.dpas.common.payloads;
+package pt.ist.meic.sec.dpas.common.payloads.common;
 
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;

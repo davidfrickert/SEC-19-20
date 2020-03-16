@@ -24,11 +24,11 @@ public class ArrayUtils {
         return merged;
     }
 
-    public static <T extends Serializable> byte[] listToBytes(List<T> list) {
+    public static <T> byte[] objectToBytes(T object) {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(list);
+            oos.writeObject(object);
             return bos.toByteArray();
         } catch (IOException e) {
             e.printStackTrace();
@@ -36,14 +36,22 @@ public class ArrayUtils {
         }
     }
 
-    public static <T extends Serializable> List<T> bytesToList(byte[] bytes) {
+    public static Object bytesToObject(byte[] bytes) {
         try {
             ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
             ObjectInputStream ois = new ObjectInputStream(bis);
-            return (List<T>) ois.readObject();
+            return ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             throw new IllegalStateException();
         }
+    }
+
+    public static <T> List<T> bytesToList(byte[] bytes) {
+        return (List<T>) bytesToObject(bytes);
+    }
+
+    public static <T> T bytesToGeneric(byte[] bytes) {
+        return (T) bytesToObject(bytes);
     }
 }
