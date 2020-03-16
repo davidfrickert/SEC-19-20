@@ -48,31 +48,11 @@ public class DPAServer {
                 Socket inSoc = server.accept();
                 ServerThread newServerThread = new ServerThread(inSoc);
                 newServerThread.start();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
 
         }
-
-       /**
-       String data = "Olá";
-       List<Integer> links = Arrays.asList(1, 2, 3);
-
-       byte[] encryptedData = Crypto.encryptBytes(data.getBytes(),  s.publicKey, true);
-       PublicKey idKey = s.getPublicKey(0);
-       byte[] encryptedOperation = Crypto.encryptBytes(Operation.POST.name().getBytes(), s.publicKey, true);
-       byte[] encryptedLinkedAnnouncements = Crypto.encryptBytes(ArrayUtils.listToBytes(links), s.publicKey, false);
-
-       byte[] originalData = ArrayUtils.merge(data.getBytes(), s.getPublicKey(0).getEncoded(),
-               Operation.POST.name().getBytes(), ArrayUtils.listToBytes(links));
-
-       byte[] signature = Crypto.sign(originalData, s.getPrivateKey(0));
-
-       EncryptedPayload p = new EncryptedPayload(encryptedData, idKey, encryptedOperation, encryptedLinkedAnnouncements,
-               signature);
-       p.decrypt(s.privateKey, idKey);
-        */
     }
 
     static class ServerThread extends Thread {

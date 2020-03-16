@@ -25,19 +25,11 @@ public class ClientLibrary {
     private Socket clientSocket;
     private PrintWriter out;
     private BufferedReader in;
-    private PrivateKey privateKey;
-    public PublicKey publicKey;
-    public PublicKey serverKey;
 
     public void start(String ip, int port) throws IOException {
         clientSocket = new Socket(ip, port);
         out = new PrintWriter(clientSocket.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-        // not dynamic (yet)
-        privateKey = KeyManager.loadPrivateKey("keys/private/clients/private1.der");
-        publicKey = KeyManager.loadPublicKey("keys/public/clients/public1.der");
-        serverKey = KeyManager.loadPublicKey("keys/public/pub-server.der");
     }
 
     public void stop() throws IOException {
@@ -47,15 +39,15 @@ public class ClientLibrary {
     }
 
     // not using key, but maybe we should have the client handle these instead of being in the library?
-    public void register(PublicKey key) {
+    public void register(PublicKey ku, PrivateKey kr) {
         Instant time = Instant.now();
         Operation op = Operation.REGISTER;
 
-        byte[] encryptedOperation = Crypto.encryptBytes(op.name().getBytes(), publicKey, true);
-        byte[] encryptedTimestamp = Crypto.encryptBytes(time.toString().getBytes(), publicKey, true);
-        byte[] originalData = ArrayUtils.merge(null, publicKey.getEncoded(), op.name().getBytes(), null, time.toString().getBytes());
+        byte[] encryptedOperation = Crypto.encryptBytes(op.name().getBytes(), ku, true);
+        byte[] encryptedTimestamp = Crypto.encryptBytes(time.toString().getBytes(), ku, true);
+        byte[] originalData = ArrayUtils.merge(null, ku.getEncoded(), op.name().getBytes(), null, time.toString().getBytes());
 
-        byte[] signature = Crypto.sign(originalData, privateKey);
+        byte[] signature = Crypto.sign(originalData, kr);
 
         EncryptedPayload payload = new EncryptedPayload(null,
                 key, encryptedOperation, null, encryptedTimestamp, signature);
@@ -78,14 +70,14 @@ public class ClientLibrary {
     }
 
 
-    public void read(PublicKey key, BigInteger number) {
+    public void read(PublicKey key, Integer number) {
         Instant time = Instant.now();
         Operation op = Operation.READ;
 
         //TODO
     }
 
-    public void readGeneral(BigInteger number) {
+    public void readGeneral(Integer number) {
         Instant time = Instant.now();
         Operation op = Operation.READ_GENERAL;
 
@@ -96,7 +88,7 @@ public class ClientLibrary {
         try {
             ClientLibrary c = new ClientLibrary();
             c.start("127.0.0.1", 8081);
-            c.register(c.publicKey);
+            //c.register(c.publicKey);
         } catch (IOException e) {
             e.printStackTrace();
         }
