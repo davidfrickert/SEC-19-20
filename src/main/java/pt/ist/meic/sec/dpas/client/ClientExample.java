@@ -1,11 +1,12 @@
 package pt.ist.meic.sec.dpas.client;
 
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
-import pt.ist.meic.sec.dpas.library.ClientLibrary;
+import pt.ist.meic.sec.dpas.client.ClientLibrary;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -26,7 +27,6 @@ public class ClientExample {
         // not dynamic (yet)
         privateKey = KeyManager.loadPrivateKey("keys/private/clients/private1.der");
         publicKey = KeyManager.loadPublicKey("keys/public/clients/public1.der");
-        serverKey = KeyManager.loadPublicKey("keys/public/pub-server.der");
 
         InetAddress host = InetAddress.getLocalHost();
         ClientLibrary library = new ClientLibrary();
@@ -39,7 +39,6 @@ public class ClientExample {
         Boolean quit = false;
         System.out.print(">>");
         while(!quit) {
-            //le as intrucoes do utilizador ate este fazer quit
             line = sc.nextLine();
             split = line.split(" ");
 
@@ -49,21 +48,21 @@ public class ClientExample {
                     break;
                 case "post":
                     String announcement = getAnnouncement(split);
-                    List<Integer> prevAnnouncements = getPreviousAnnouncement(split);
-                    library.post(publicKey, announcement, prevAnnouncements);
+                    List<BigInteger> prevAnnouncements = getPreviousAnnouncement(split);
+                    library.post(publicKey, announcement, prevAnnouncements, privateKey);
                     break;
                 case "postGeneral":
                     String announcementGeneral = getAnnouncement(split);
-                    List<Integer> prevAnnouncementsGen = getPreviousAnnouncement(split);
-                    library.postGeneral(publicKey,announcementGeneral, prevAnnouncementsGen);
+                    List<BigInteger> prevAnnouncementsGen = getPreviousAnnouncement(split);
+                    library.postGeneral(publicKey,announcementGeneral, prevAnnouncementsGen, privateKey);
                     break;
                 case "read":
-                    Integer nAnnounce = Integer.parseInt(split[1]);
-                    library.read(publicKey,nAnnounce);
+                    BigInteger nAnnounce = BigInteger.valueOf(Integer.parseInt(split[1]));
+                    library.read(publicKey, nAnnounce, privateKey);
                     break;
                 case "readGeneral":
-                    Integer nAnnounceGen = Integer.parseInt(split[1]);
-                    library.readGeneral(nAnnounceGen);
+                    BigInteger nAnnounceGen = BigInteger.valueOf(Integer.parseInt(split[1]));
+                    library.readGeneral(nAnnounceGen, privateKey);
                     break;
                 case "quit":
                     System.out.print("Sure you want to leave? (Y = Yes, N = No) ");
@@ -92,14 +91,16 @@ public class ClientExample {
         return sb.toString();
     }
 
-    private static List<Integer> getPreviousAnnouncement(String[] line) {
-        List<Integer> result = new ArrayList<Integer>();
+    private static List<BigInteger> getPreviousAnnouncement(String[] line) {
+        List<BigInteger> result = new ArrayList<>();
         boolean found = false;
         for(int i = 1; i < line.length; i++){
             if(line[i].equals("|")){
                 found = true;
-            } else {
-                result.add(Integer.parseInt(line[i]));
+            }
+
+            if(found){
+                result.add(BigInteger.valueOf(Integer.parseInt(line[i])));
             }
         }
         return result;

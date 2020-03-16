@@ -22,8 +22,6 @@ public class ClientLibrary {
     private Socket clientSocket;
     private PrintWriter out;
     private BufferedReader in;
-    private PrivateKey privateKey;
-    public PublicKey publicKey;
     public PublicKey serverKey;
 
     public void start(String ip, int port) throws IOException {
@@ -31,9 +29,6 @@ public class ClientLibrary {
         out = new PrintWriter(clientSocket.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-        // not dynamic (yet)
-        privateKey = KeyManager.loadPrivateKey("keys/private/clients/private1.der");
-        publicKey = KeyManager.loadPublicKey("keys/public/clients/public1.der");
         serverKey = KeyManager.loadPublicKey("keys/public/pub-server.der");
     }
 
@@ -43,7 +38,7 @@ public class ClientLibrary {
         clientSocket.close();
     }
 
-    public void register(PublicKey key) {
+    public void register(PublicKey key, PrivateKey privateKey) {
 
         Instant time = Instant.now();
         Operation op = Operation.REGISTER;
@@ -66,7 +61,7 @@ public class ClientLibrary {
 
     }
 
-    public void post(PublicKey key, String message, List<BigInteger> announcements) {
+    public void post(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
         Instant time = Instant.now();
         Operation op = Operation.POST;
 
@@ -74,7 +69,7 @@ public class ClientLibrary {
         out.println(ePayload);
     }
 
-    public void postGeneral(PublicKey key, String message, List<BigInteger> announcements) {
+    public void postGeneral(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
         Instant time = Instant.now();
         Operation op = Operation.POST_GENERAL;
 
@@ -83,7 +78,7 @@ public class ClientLibrary {
     }
 
 
-    public void read(PublicKey key, BigInteger number) {
+    public void read(PublicKey key, BigInteger number, PrivateKey privateKey) {
         Instant time = Instant.now();
         Operation op = Operation.READ;
 
@@ -91,7 +86,7 @@ public class ClientLibrary {
         out.println(ePayload);
     }
 
-    public void readGeneral(BigInteger number) {
+    public void readGeneral(BigInteger number, PrivateKey privateKey) {
         Instant time = Instant.now();
         Operation op = Operation.READ_GENERAL;
 
@@ -99,6 +94,7 @@ public class ClientLibrary {
         out.println(ePayload);
     }
 
+    /**
     public static void main(String[] args) {
         try {
             ClientLibrary c = new ClientLibrary();
@@ -108,4 +104,5 @@ public class ClientLibrary {
             e.printStackTrace();
         }
     }
+     */
 }
