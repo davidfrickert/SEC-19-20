@@ -1,6 +1,7 @@
 package pt.ist.meic.sec.dpas.common.payloads.reply;
 
 import org.apache.log4j.Logger;
+import pt.ist.meic.sec.dpas.common.Announcement;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
@@ -16,7 +17,6 @@ import java.util.List;
 
 public class EncryptedPayloadReply extends EncryptedPayload {
     private final static Logger logger = Logger.getLogger(EncryptedPayloadReply.class);
-
 
     private final byte[] statusMessage;
 
@@ -36,7 +36,7 @@ public class EncryptedPayloadReply extends EncryptedPayload {
         StatusMessage status = StatusMessage.fromBytes(Crypto.decryptBytes(this.statusMessage, receiverKey));
 
         // replace with List<Announcement>
-        List<String> announcements = null;
+        List<Announcement> announcements = null;
         if (this.announcements != null)
             announcements = ArrayUtils.bytesToList(Crypto.decryptBytes(this.statusMessage, receiverKey));
 

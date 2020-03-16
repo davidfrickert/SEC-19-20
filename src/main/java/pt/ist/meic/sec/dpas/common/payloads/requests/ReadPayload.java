@@ -20,7 +20,7 @@ public class ReadPayload extends DecryptedPayload {
     public ReadPayload(BigInteger nAnnouncements, PublicKey auth, Operation op, Instant timestamp) {
         super(auth, op,  timestamp);
         this.nAnnouncements = nAnnouncements;
-        logger.info("Created - " + op + ", " + nAnnouncements + ", " + timestamp + ", " + auth.hashCode());
+        //logger.info("Created - " + op + ", " + nAnnouncements + ", " + timestamp + ", " + auth.hashCode());
     }
 
     public byte[] asBytes() {
@@ -46,4 +46,13 @@ public class ReadPayload extends DecryptedPayload {
         return nAnnouncements;
     }
 
+    @Override
+    public String toString() {
+        return "ReadPayload{" +
+                "nAnnouncements=" + nAnnouncements +
+                ", senderKey=" + getSenderKey().hashCode() +
+                ", operation=" + getOperation() +
+                ", timestamp=" + getTimestamp() +
+                '}';
+    }
 }

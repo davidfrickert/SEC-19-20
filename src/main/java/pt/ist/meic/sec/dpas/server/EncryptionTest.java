@@ -83,7 +83,7 @@ public class EncryptionTest {
 
     public void testPOST() {
         String data = "Olá";
-        List<Integer> linkedAnnouncementIds = Arrays.asList(1, 2, 3);
+        List<BigInteger> linkedAnnouncementIds = Arrays.asList(BigInteger.ZERO, BigInteger.ONE);
         Instant timestamp = Instant.now();
         PublicKey idKey = this.getPublicKey(0);
 

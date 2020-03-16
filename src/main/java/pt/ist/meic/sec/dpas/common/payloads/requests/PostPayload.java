@@ -7,6 +7,7 @@ import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
+import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
@@ -16,13 +17,13 @@ public class PostPayload extends DecryptedPayload {
     private final static Logger logger = Logger.getLogger(PostPayload.class);
 
     private final String announcement;
-    private final List<Integer> linkedAnnouncements;
+    private final List<BigInteger> linkedAnnouncements;
 
-    public PostPayload(String announcement, PublicKey auth, Operation op, Instant timestamp, List<Integer> links) {
+    public PostPayload(String announcement, PublicKey auth, Operation op, Instant timestamp, List<BigInteger> links) {
         super(auth, op, timestamp);
         this.announcement = announcement;
         this.linkedAnnouncements = links;
-        logger.info("Created - " + op + ", " + announcement + ", " + timestamp + ", " + links.toString() + ", " + auth.hashCode());
+        //logger.info("Created - " + op + ", " + announcement + ", " + timestamp + ", " + links.toString() + ", " + auth.hashCode());
     }
 
     public byte[] asBytes() {
@@ -47,5 +48,16 @@ public class PostPayload extends DecryptedPayload {
 
     public String getData() {
         return announcement;
+    }
+
+    @Override
+    public String toString() {
+        return "PostPayload{" +
+                "announcement='" + announcement + '\'' +
+                ", linkedAnnouncements=" + linkedAnnouncements +
+                ", senderKey=" + getSenderKey().hashCode() +
+                ", operation=" + getOperation() +
+                ", timestamp=" + getTimestamp() +
+                '}';
     }
 }

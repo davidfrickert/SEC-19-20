@@ -1,44 +1,38 @@
 package pt.ist.meic.sec.dpas.common.payloads.reply;
 
-import org.apache.log4j.Logger;
+import pt.ist.meic.sec.dpas.common.Announcement;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
-import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
-
+import java.util.List;
 
 /**
- * Payload sent as a reply to POST / POST_GENERAL / REGISTER operations
- * Represents a simple acknowledgement of success or insuccess of the operation to the client
+ * Represent a Payload as a reply to READ / READ_GENERAL operations
+ * Contains the announcements requested if the request was accepted
  */
-public class ACKPayload extends DecryptedPayload {
-    private final static Logger logger = Logger.getLogger(ACKPayload.class);
 
-    private final StatusMessage status;
+public class AnnouncementsPayload extends ACKPayload {
 
-    public ACKPayload(PublicKey auth, Operation op, Instant timestamp, StatusMessage status) {
-        super(auth, op, timestamp);
-        this.status = status;
-        //logger.info("Created - " + op + ", " + status + ", " + timestamp + ", " + auth.hashCode());
-    }
+    private final List<Announcement> announcements;
 
-    @Override
-    public Object getData() {
-        return null;
+    public AnnouncementsPayload(PublicKey auth, Operation op, Instant timestamp, StatusMessage status,
+                                List<Announcement> announcements) {
+        super(auth, op, timestamp, status);
+        this.announcements = announcements;
     }
 
     @Override
     public byte[] asBytes() {
-        return ArrayUtils.merge(super.asBytes(), this.status.asBytes());
+        return ArrayUtils.merge(super.asBytes(), ArrayUtils.objectToBytes(this.announcements));
     }
 
-    public StatusMessage getStatus() {
-        return status;
+    public List<Announcement> getAnnouncements() {
+        return announcements;
     }
 
     @Override
@@ -46,7 +40,8 @@ public class ACKPayload extends DecryptedPayload {
         PublicKey idKey = this.getSenderKey();
         byte[] encryptedOperation = Crypto.encryptBytes(this.getOperation().name().getBytes(), receiverKey);
         byte[] encryptedTimestamp = Crypto.encryptBytes(this.getTimestamp().toString().getBytes(), receiverKey);
-        byte[] encryptedStatusMsg = Crypto.encryptBytes(this.status.asBytes(), receiverKey);
+        byte[] encryptedStatusMsg = Crypto.encryptBytes(this.getStatus().asBytes(), receiverKey);
+        byte[] encryptedAnnouncements = Crypto.encryptBytes(ArrayUtils.objectToBytes(this.announcements), receiverKey);
 
         byte[] originalData = this.asBytes();
 
@@ -55,13 +50,14 @@ public class ACKPayload extends DecryptedPayload {
 
 
         return new EncryptedPayloadReply(idKey, encryptedOperation,encryptedTimestamp, signature, encryptedStatusMsg
-                , null );
+                , encryptedAnnouncements );
     }
 
     @Override
     public String toString() {
-        return "ACKPayload{" +
-                "status=" + status +
+        return "AnnouncementsPayload{" +
+                "announcements=" + announcements +
+                ", status=" + getStatus() +
                 ", senderKey=" + getSenderKey().hashCode() +
                 ", operation=" + getOperation() +
                 ", timestamp=" + getTimestamp() +

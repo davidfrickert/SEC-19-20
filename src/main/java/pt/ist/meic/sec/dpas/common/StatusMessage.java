@@ -31,7 +31,7 @@ public class StatusMessage implements Serializable {
     }
 
     public static StatusMessage fromBytes(byte[] bytes) {
-        return ArrayUtils.bytesToStatusMessage(bytes);
+        return ArrayUtils.bytesToGeneric(bytes);
     }
 
     @Override

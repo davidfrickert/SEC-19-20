@@ -7,6 +7,7 @@ import pt.ist.meic.sec.dpas.common.payloads.common.PayloadFactory;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
+import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
@@ -31,7 +32,7 @@ public class EncryptedPayloadRequest extends EncryptedPayload {
 
         // linked announcements is not a general parameter (only for POST/POST_GENERAL)
         // so, it's null in other operations
-        List<Integer> linked = null;
+        List<BigInteger> linked = null;
         if (this.linkedAnnouncements != null)
             linked = ArrayUtils.bytesToList(Crypto.decryptBytes(this.linkedAnnouncements, receiverKey));
 

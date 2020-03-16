@@ -36,4 +36,14 @@ public class RegisterPayload extends DecryptedPayload {
         return new EncryptedPayloadRequest(idKey, encryptedOperation, encryptedTimestamp, signature, null,
                 null);
     }
+
+    @Override
+    public String toString() {
+        return "RegisterPayload{" +
+                "data=" + getData() +
+                ", senderKey=" + getSenderKey().hashCode() +
+                ", operation=" + getOperation() +
+                ", timestamp=" + getTimestamp() +
+                '}';
+    }
 }

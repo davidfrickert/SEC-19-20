@@ -1,7 +1,5 @@
 package pt.ist.meic.sec.dpas.common.utils;
 
-import pt.ist.meic.sec.dpas.common.StatusMessage;
-
 import java.io.*;
 import java.util.Arrays;
 import java.util.List;
@@ -53,7 +51,7 @@ public class ArrayUtils {
         return (List<T>) bytesToObject(bytes);
     }
 
-    public static StatusMessage bytesToStatusMessage(byte[] bytes) {
-        return (StatusMessage) bytesToObject(bytes);
+    public static <T> T bytesToGeneric(byte[] bytes) {
+        return (T) bytesToObject(bytes);
     }
 }
