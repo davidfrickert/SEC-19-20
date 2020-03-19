@@ -14,12 +14,15 @@ import java.util.List;
 public class Announcement implements Serializable {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(columnDefinition = "BIGINT")
+
     private BigInteger id;
 
     private final String message;
     private final Instant creationTime = Instant.now();
-    
+
+    @Column(columnDefinition = "VARBINARY(4096)")
     private final PublicKey creatorId;
     @ElementCollection
     @CollectionTable(name="linked_announcements",

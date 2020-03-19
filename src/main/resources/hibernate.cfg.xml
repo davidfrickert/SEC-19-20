@@ -5,11 +5,19 @@
 
 <hibernate-configuration>
     <session-factory>
+        <!--
+        H2
         <property name="connection.driver_class">org.h2.Driver</property>
         <property name="connection.url">jdbc:h2:mem:test;DB_CLOSE_DELAY=-1</property>
         <property name="dialect">org.hibernate.dialect.H2Dialect</property>
+        -->
+        <property name="dialect">org.hibernate.dialect.MySQL5Dialect</property>
+        <property name="connection.driver_class">com.mysql.jdbc.Driver</property>
+        <property name="connection.url">jdbc:mysql://localhost/dpas?createDatabaseIfNotExist=true</property>
         <property name="show_sql">true</property>
-        <property name="hbm2ddl.auto">create</property>
+        <property name = "hibernate.connection.username">root</property>
+        <property name = "hibernate.connection.password">root</property>
+        <property name="hbm2ddl.auto">update</property>
         <mapping class="pt.ist.meic.sec.dpas.common.Announcement"/>
     </session-factory>
 </hibernate-configuration>

@@ -34,8 +34,8 @@ public class ClientExample {
         String line;
         String[] split;
         Boolean quit = false;
-        System.out.print(">>");
         while(!quit) {
+            System.out.print(">>");
             line = sc.nextLine();
             split = line.split(" ");
 
