@@ -137,8 +137,6 @@ public class DPAServer {
             sess.close();
         }
 
-
-
     }
 
     public Session openSession() {

@@ -16,7 +16,6 @@ public class Announcement implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(columnDefinition = "BIGINT")
-
     private BigInteger id;
 
     private final String message;
@@ -26,7 +25,7 @@ public class Announcement implements Serializable {
     private final PublicKey creatorId;
     @ElementCollection
     @CollectionTable(name="linked_announcements",
-    joinColumns = @JoinColumn(name = "id"))
+    joinColumns = @JoinColumn(name = "id", columnDefinition = "BIGINT"))
     @Column(columnDefinition = "BIGINT")
     private final List<BigInteger> referred;
 

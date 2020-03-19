@@ -68,24 +68,28 @@ public class ClientLibrary {
     }
 
     public void post(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
+        logger.info("Attempting POST");
         Instant time = Instant.now();
         Operation op = Operation.POST;
 
         EncryptedPayload ePayload = new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
         try {
             out.writeObject(ePayload);
+            logger.info("Sent POST with message: " + message + ", linked to: " + announcements);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void postGeneral(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
+        logger.info("Attempting POST_GENERAL");
         Instant time = Instant.now();
         Operation op = Operation.POST_GENERAL;
 
         EncryptedPayload ePayload = new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
         try {
             out.writeObject(ePayload);
+            logger.info("Sent POST_GENERAL with message: " + message + ", linked to: " + announcements);
         } catch (IOException e) {
             e.printStackTrace();
         }
