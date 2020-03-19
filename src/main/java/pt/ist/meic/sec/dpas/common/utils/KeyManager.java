@@ -4,6 +4,7 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -12,10 +13,30 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class KeyManager {
 
     private final static Logger logger = Logger.getLogger(KeyManager.class);
+
+    /**
+     * Loads all public keys in scope
+     * @return list of public keys
+     */
+
+    public static List<PublicKey> loadPublicKeys() {
+
+        try (Stream<Path> walk = Files.walk(Paths.get("keys/public/clients"))) {
+            List<String> result = walk.filter(Files::isRegularFile).map(Path::toString).collect(Collectors.toList());
+            return result.stream().map(KeyManager::loadPublicKey).collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<>();
+    }
 
     /**
      * Loads private key file

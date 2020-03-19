@@ -4,6 +4,7 @@ import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
+import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
@@ -89,8 +90,10 @@ public class EncryptionTest {
 
         PostPayload postPayload = new PostPayload(data, idKey, Operation.POST, timestamp, linkedAnnouncementIds);
 
-        EncryptedPayload p = postPayload.encrypt(this.publicKey, this.getPrivateKey(0));
-        p.decrypt(this.privateKey, idKey);
+        EncryptedPayload ep = postPayload.encrypt(this.publicKey, this.getPrivateKey(0));
+        DecryptedPayload dp = ep.decrypt(this.privateKey);
+        boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
+
 
         testPOSTReply();
     }
@@ -102,8 +105,9 @@ public class EncryptionTest {
         Operation o = Operation.POST;
 
         ACKPayload ackPayload = new ACKPayload(idKey, o, timestamp, s);
-        EncryptedPayload p = ackPayload.encrypt(this.getPublicKey(0), this.privateKey);
-        p.decrypt(this.getPrivateKey(0), idKey);
+        EncryptedPayload ep = ackPayload.encrypt(this.getPublicKey(0), this.privateKey);
+        DecryptedPayload dp = ep.decrypt(this.privateKey);
+        boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
     }
 
     public void testREAD() {
@@ -114,8 +118,9 @@ public class EncryptionTest {
         Operation o = Operation.READ;
 
         ReadPayload readPayload = new ReadPayload(n, idKey, o, timestamp);
-        EncryptedPayload p = readPayload.encrypt(this.publicKey, this.getPrivateKey(keyNumber));
-        p.decrypt(this.privateKey, idKey);
+        EncryptedPayload ep = readPayload.encrypt(this.publicKey, this.getPrivateKey(keyNumber));
+        DecryptedPayload dp = ep.decrypt(this.privateKey);
+        boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
 
     }
 
@@ -126,8 +131,9 @@ public class EncryptionTest {
         Operation o = Operation.REGISTER;
 
         RegisterPayload registerPayload = new RegisterPayload(idKey, o, timestamp);
-        EncryptedPayload p = registerPayload.encrypt(this.publicKey, this.getPrivateKey(keyNumber));
-        p.decrypt(this.privateKey, idKey);
+        EncryptedPayload ep = registerPayload.encrypt(this.publicKey, this.getPrivateKey(keyNumber));
+        DecryptedPayload dp = ep.decrypt(this.privateKey);
+        boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
     }
 
 

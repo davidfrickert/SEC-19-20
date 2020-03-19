@@ -39,5 +39,5 @@ public abstract class EncryptedPayload implements Serializable {
         return timestamp;
     }
 
-    public abstract DecryptedPayload decrypt(PrivateKey receiverKey, PublicKey senderKey);
+    public abstract DecryptedPayload decrypt(PrivateKey receiverKey);
 }

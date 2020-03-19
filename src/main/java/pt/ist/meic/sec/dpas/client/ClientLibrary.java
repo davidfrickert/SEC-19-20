@@ -42,20 +42,7 @@ public class ClientLibrary {
 
         Instant time = Instant.now();
         Operation op = Operation.REGISTER;
-        /*
-        byte[] encryptedOperation = Crypto.encryptBytes(op.name().getBytes(), serverKey);
-        byte[] encryptedTimestamp = Crypto.encryptBytes(time.toString().getBytes(), serverKey);
-        byte[] originalData = ArrayUtils.merge(null, publicKey.getEncoded(), op.name().getBytes(), null, time.toString().getBytes());
 
-        byte[] signature = Crypto.sign(originalData, privateKey);
-
-        EncryptedPayload payload =  new EncryptedPayloadRequest(key, encryptedOperation, encryptedTimestamp, signature, null,
-                null);
-
-        out.println(payload);
-        */
-
-        // new way to do it
         EncryptedPayload ePayload = new RegisterPayload(key, op, time).encrypt(serverKey, privateKey);
         out.println(ePayload);
 

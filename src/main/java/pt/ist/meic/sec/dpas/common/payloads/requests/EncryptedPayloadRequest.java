@@ -25,7 +25,7 @@ public class EncryptedPayloadRequest extends EncryptedPayload {
     }
 
     @Override
-    public DecryptedPayload decrypt(PrivateKey receiverKey, PublicKey senderKey) {
+    public DecryptedPayload decrypt(PrivateKey receiverKey) {
 
         Operation op = Operation.fromBytes(Crypto.decryptBytes(this.getOperation(), receiverKey));
         Instant timestamp = Instant.parse(new String(Crypto.decryptBytes(this.getTimestamp(), receiverKey)));
@@ -42,8 +42,6 @@ public class EncryptedPayloadRequest extends EncryptedPayload {
             data = Crypto.decryptBytes(this.message, receiverKey);
 
         DecryptedPayload dp = PayloadFactory.genRequestPayloadFromOperation(op, data, this.getSenderKey(), timestamp, linked);
-
-        Crypto.verifyDigest(dp.asBytes(), this.getSignature(), senderKey);
 
         return dp;
     }

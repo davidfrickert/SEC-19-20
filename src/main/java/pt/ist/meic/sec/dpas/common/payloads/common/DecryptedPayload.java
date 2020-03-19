@@ -2,6 +2,7 @@ package pt.ist.meic.sec.dpas.common.payloads.common;
 
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
+import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -34,9 +35,14 @@ public abstract class DecryptedPayload {
         return operation;
     }
 
-    public abstract EncryptedPayload encrypt(PublicKey receiverKey, PrivateKey senderKey);
-
     public Instant getTimestamp() {
         return timestamp;
     }
+
+    public abstract EncryptedPayload encrypt(PublicKey receiverKey, PrivateKey senderKey);
+
+    public boolean verifySignature(EncryptedPayload e, PublicKey senderKey) {
+        return Crypto.verify(this.asBytes(), e.getSignature(), senderKey);
+    }
+
 }
