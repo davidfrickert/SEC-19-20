@@ -96,6 +96,7 @@ public class ClientExample {
         for(int i = 1; i < line.length; i++){
             if(line[i].equals("|")){
                 found = true;
+                continue;
             }
 
             if(found){
