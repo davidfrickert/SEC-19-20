@@ -1,16 +1,17 @@
 package pt.ist.meic.sec.dpas.client;
 
+import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
+import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.security.PrivateKey;
@@ -19,15 +20,17 @@ import java.time.Instant;
 import java.util.List;
 
 public class ClientLibrary {
+    private final static Logger logger = Logger.getLogger(ClientLibrary.class);
+
     private Socket clientSocket;
-    private PrintWriter out;
-    private BufferedReader in;
+    private ObjectOutputStream out;
+    private ObjectInputStream in;
     public PublicKey serverKey;
 
     public void start(String ip, int port) throws IOException {
         clientSocket = new Socket(ip, port);
-        out = new PrintWriter(clientSocket.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        out = new ObjectOutputStream(clientSocket.getOutputStream());
+        in = new ObjectInputStream(clientSocket.getInputStream());
 
         serverKey = KeyManager.loadPublicKey("keys/public/pub-server.der");
     }
@@ -39,12 +42,28 @@ public class ClientLibrary {
     }
 
     public void register(PublicKey key, PrivateKey privateKey) {
-
+        logger.info("Attempting REGISTER");
         Instant time = Instant.now();
         Operation op = Operation.REGISTER;
 
         EncryptedPayload ePayload = new RegisterPayload(key, op, time).encrypt(serverKey, privateKey);
-        out.println(ePayload);
+        try {
+            out.writeObject(ePayload);
+            logger.info("Sent REGISTER");
+            EncryptedPayload ep = (EncryptedPayload) in.readObject();
+            DecryptedPayload dp = ep.decrypt(privateKey);
+            boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
+            if (! correctSignature) {
+                logger.warn("Received REGISTER Reply with bad signature");
+            } else {
+                logger.info("Received REGISTER Reply correctly!");
+            }
+
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
 
     }
 
@@ -53,7 +72,11 @@ public class ClientLibrary {
         Operation op = Operation.POST;
 
         EncryptedPayload ePayload = new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
-        out.println(ePayload);
+        try {
+            out.writeObject(ePayload);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void postGeneral(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
@@ -61,7 +84,11 @@ public class ClientLibrary {
         Operation op = Operation.POST_GENERAL;
 
         EncryptedPayload ePayload = new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
-        out.println(ePayload);
+        try {
+            out.writeObject(ePayload);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -70,7 +97,11 @@ public class ClientLibrary {
         Operation op = Operation.READ;
 
         EncryptedPayload ePayload = new ReadPayload(number, key, op, time).encrypt(serverKey, privateKey);
-        out.println(ePayload);
+        try {
+            out.writeObject(ePayload);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void readGeneral(BigInteger number, PrivateKey privateKey) {
@@ -78,7 +109,11 @@ public class ClientLibrary {
         Operation op = Operation.READ_GENERAL;
 
         EncryptedPayload ePayload = new ReadPayload(number, null, op, time).encrypt(serverKey, privateKey);
-        out.println(ePayload);
+        try {
+            out.writeObject(ePayload);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

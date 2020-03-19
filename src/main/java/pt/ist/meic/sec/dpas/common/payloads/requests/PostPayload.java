@@ -17,6 +17,11 @@ public class PostPayload extends DecryptedPayload {
     private final static Logger logger = Logger.getLogger(PostPayload.class);
 
     private final String announcement;
+
+    public List<BigInteger> getLinkedAnnouncements() {
+        return linkedAnnouncements;
+    }
+
     private final List<BigInteger> linkedAnnouncements;
 
     public PostPayload(String announcement, PublicKey auth, Operation op, Instant timestamp, List<BigInteger> links) {

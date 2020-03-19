@@ -1,16 +1,31 @@
 package pt.ist.meic.sec.dpas.server;
 
 import org.apache.log4j.Logger;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import pt.ist.meic.sec.dpas.common.Announcement;
+import pt.ist.meic.sec.dpas.common.Operation;
+import pt.ist.meic.sec.dpas.common.Status;
+import pt.ist.meic.sec.dpas.common.StatusMessage;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,11 +41,19 @@ public class DPAServer {
     private static ServerSocket server;
     private static int port = 9876;
 
+
+
+    private SessionFactory sf;
+
     public DPAServer() throws IOException {
         loadPublicKeys();
         this.privateKey = loadPrivateKey("keys/private/priv-server.der");
         this.publicKey = loadPublicKey("keys/public/pub-server.der");
         server = new ServerSocket(port);
+        StandardServiceRegistry ssr = new StandardServiceRegistryBuilder().configure("hibernate.cfg.xml").build();
+        Metadata meta = new MetadataSources(ssr).getMetadataBuilder().build();
+        sf = meta.getSessionFactoryBuilder().build();
+
     }
 
     public PublicKey getPublicKey(int index) {
@@ -40,6 +63,7 @@ public class DPAServer {
     public void listen() {
         while(true) {
             try {
+                logger.info("Listening on " + server.getInetAddress().getHostAddress() + ":" + port);
                 Socket inSoc = server.accept();
                 ServerThread newServerThread = new ServerThread(inSoc);
                 newServerThread.start();
@@ -80,6 +104,22 @@ public class DPAServer {
                         // handle logic for tampering attempt?
                     } else {
                         // handle regular logic
+                        EncryptedPayload e = switch (dp.getOperation()) {
+                            case REGISTER:
+                                // do something about register in db or whatever.. and then return msg
+                                yield new ACKPayload(DPAServer.this.publicKey, Operation.REGISTER, Instant.now(),
+                                    new StatusMessage(Status.Success, "OK")).encrypt(dp.getSenderKey(), DPAServer.this.privateKey);
+                            case POST:
+                                PostPayload p = (PostPayload) dp;
+                                saveAnnouncement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements());
+                                yield new ACKPayload(DPAServer.this.publicKey, Operation.REGISTER, Instant.now(),
+                                        new StatusMessage(Status.Success, "OK")).encrypt(dp.getSenderKey(), DPAServer.this.privateKey);
+                            case POST_GENERAL:
+                            case READ:
+                            case READ_GENERAL:
+                                yield null;
+                        };
+                        outStream.writeObject(e);
                     }
                 }
 
@@ -87,8 +127,25 @@ public class DPAServer {
                 e.printStackTrace();
             }
         }
+
+        public void saveAnnouncement(String a, PublicKey owner, List<BigInteger> linked) {
+            Session sess = openSession();
+            Transaction t = sess.beginTransaction();
+
+            sess.save(new Announcement(a, owner, linked));
+            t.commit();
+            sess.close();
+        }
+
+
+
     }
 
+    public Session openSession() {
+        return sf.openSession();
+    }
 
-
+    public static int getPort() {
+        return port;
+    }
 }

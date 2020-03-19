@@ -1,15 +1,12 @@
 package pt.ist.meic.sec.dpas.client;
 
+import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
-import pt.ist.meic.sec.dpas.client.ClientLibrary;
+import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -17,6 +14,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class ClientExample {
+    private final static Logger logger = Logger.getLogger(ClientExample.class);
 
     private static PrivateKey privateKey;
     private static PublicKey publicKey;
@@ -26,12 +24,11 @@ public class ClientExample {
 
         // not dynamic (yet)
         privateKey = KeyManager.loadPrivateKey("keys/private/clients/private1.der");
-        publicKey = KeyManager.loadPublicKey("keys/public/clients/public1.der");
+        publicKey = KeyManager.loadPublicKey("keys/public/clients/pub1.der");
 
         InetAddress host = InetAddress.getLocalHost();
         ClientLibrary library = new ClientLibrary();
-        library.start(host.getHostName(), 9999);
-
+        library.start(host.getHostName(), DPAServer.getPort());
         //do actions
         Scanner sc = new Scanner(System.in);
         String line;
@@ -72,6 +69,8 @@ public class ClientExample {
                         System.exit(0);
                     }
                     break;
+                default:
+                    System.out.println("Ignored");
             }
 
             System.out.print(">>");

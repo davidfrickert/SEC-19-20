@@ -2,6 +2,7 @@ package pt.ist.meic.sec.dpas.common.utils;
 
 import org.apache.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,6 +75,7 @@ public class KeyManager {
             return keyFactory.generatePublic(publicSpec);
         } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
             logger.info("Failed to load public key from file '" + path + "'. " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            logger.debug(new File(".").getAbsolutePath());
             throw new IllegalStateException();
         }
     }
