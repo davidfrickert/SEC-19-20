@@ -67,6 +67,11 @@ public class DPAServer {
     // loads boards from db and if they dont exists creates them
     // not persisting new boards yet.
     private void initBoards() {
+        initUserBoards();
+        initGeneralBoard();
+    }
+
+    private void initUserBoards() {
         Session s = openSession();
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<UserBoard> c = cb.createQuery(UserBoard.class);
@@ -82,11 +87,14 @@ public class DPAServer {
         }
         this.allBoards = boards;
         s.close();
-        Session s2 = openSession();
-        CriteriaBuilder cb2 = s.getCriteriaBuilder();
-        CriteriaQuery<GeneralBoard> c2 = cb.createQuery(GeneralBoard.class);
+    }
+
+    private void initGeneralBoard() {
+        Session s = openSession();
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<GeneralBoard> c = cb.createQuery(GeneralBoard.class);
         c.from(GeneralBoard.class);
-        List<GeneralBoard> general = s2.createQuery(c2).getResultStream().collect(Collectors.toList());
+        List<GeneralBoard> general = s.createQuery(c).getResultStream().collect(Collectors.toList());
         GeneralBoard generalBoard = null;
         if (general.isEmpty()) {
             generalBoard = new GeneralBoard();

@@ -18,6 +18,10 @@
         <property name = "hibernate.connection.username">root</property>
         <property name = "hibernate.connection.password">root</property>
         <property name="hbm2ddl.auto">update</property>
-        <mapping class="pt.ist.meic.sec.dpas.common.Announcement"/>
+        <mapping class="pt.ist.meic.sec.dpas.common.model.Announcement"/>
+        <mapping class="pt.ist.meic.sec.dpas.common.model.Board"/>
+        <mapping class="pt.ist.meic.sec.dpas.common.model.UserBoard"/>
+        <mapping class="pt.ist.meic.sec.dpas.common.model.GeneralBoard"/>
+
     </session-factory>
 </hibernate-configuration>
