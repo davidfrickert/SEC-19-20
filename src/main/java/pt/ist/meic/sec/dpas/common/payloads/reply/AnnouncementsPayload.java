@@ -1,8 +1,8 @@
 package pt.ist.meic.sec.dpas.common.payloads.reply;
 
-import pt.ist.meic.sec.dpas.common.Announcement;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
+import pt.ist.meic.sec.dpas.common.model.Announcement;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
 

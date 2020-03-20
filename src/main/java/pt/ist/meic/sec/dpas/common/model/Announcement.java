@@ -1,4 +1,4 @@
-package pt.ist.meic.sec.dpas.common;
+package pt.ist.meic.sec.dpas.common.model;
 
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 
@@ -47,5 +47,9 @@ public class Announcement implements Serializable {
 
     public static Announcement fromBytes(byte[] bytes) {
         return ArrayUtils.bytesToGeneric(bytes);
+    }
+
+    public PublicKey getKey() {
+        return creatorId;
     }
 }

@@ -1,9 +1,9 @@
 package pt.ist.meic.sec.dpas.common.payloads.reply;
 
 import org.apache.log4j.Logger;
-import pt.ist.meic.sec.dpas.common.Announcement;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
+import pt.ist.meic.sec.dpas.common.model.Announcement;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.PayloadFactory;
