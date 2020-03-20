@@ -2,12 +2,7 @@ package pt.ist.meic.sec.dpas.server;
 
 import org.apache.log4j.Logger;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.boot.Metadata;
-import org.hibernate.boot.MetadataSources;
-import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
@@ -19,6 +14,7 @@ import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
+import pt.ist.meic.sec.dpas.common.utils.DAO;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -31,7 +27,6 @@ import java.net.Socket;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,7 +36,7 @@ import static pt.ist.meic.sec.dpas.common.utils.KeyManager.*;
 public class DPAServer {
     private final static Logger logger = Logger.getLogger(DPAServer.class);
 
-    private List<PublicKey> clientPKs = new ArrayList<>();
+    private List<PublicKey> clientPKs;
     private Map<PublicKey, UserBoard> allBoards;
     private Board general;
     private PrivateKey privateKey;
@@ -50,16 +45,12 @@ public class DPAServer {
     private static ServerSocket server;
     private static int port = 9876;
 
-    private SessionFactory sf;
-
     public DPAServer() throws IOException {
-        loadPublicKeys();
+        this.clientPKs = loadPublicKeys();
         this.privateKey = loadPrivateKey("keys/private/priv-server.der");
         this.publicKey = loadPublicKey("keys/public/pub-server.der");
         server = new ServerSocket(port);
-        StandardServiceRegistry ssr = new StandardServiceRegistryBuilder().configure("hibernate.cfg.xml").build();
-        Metadata meta = new MetadataSources(ssr).getMetadataBuilder().build();
-        sf = meta.getSessionFactoryBuilder().build();
+
         initBoards();
 
     }
@@ -72,25 +63,32 @@ public class DPAServer {
     }
 
     private void initUserBoards() {
-        Session s = openSession();
+
+        Session s = DAO.openSession();
+
+
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<UserBoard> c = cb.createQuery(UserBoard.class);
         c.from(UserBoard.class);
+
+
         Map<PublicKey, UserBoard> boards = s.createQuery(c).getResultStream().collect(Collectors.toMap(
                 UserBoard::getOwner, u -> u));
+
+
         for (PublicKey id : clientPKs) {
             if (! boards.containsKey(id)) {
                 UserBoard u = new UserBoard(id);
-
+                DAO.persist(u);
                 boards.put(id, u);
             }
         }
         this.allBoards = boards;
-        s.close();
+       //s.close();
     }
 
     private void initGeneralBoard() {
-        Session s = openSession();
+        Session s = DAO.openSession();
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<GeneralBoard> c = cb.createQuery(GeneralBoard.class);
         c.from(GeneralBoard.class);
@@ -102,6 +100,7 @@ public class DPAServer {
             generalBoard = general.get(0);
         }
         this.general = generalBoard;
+        s.close();
     }
 
     public void listen() {
@@ -173,19 +172,15 @@ public class DPAServer {
         }
 
         public void saveAnnouncement(String a, PublicKey owner, List<BigInteger> linked) {
-            Session sess = openSession();
+            Session sess = DAO.getSf().getCurrentSession();
             Transaction t = sess.beginTransaction();
             Announcement announcement = new Announcement(a, owner, linked);
             sess.save(announcement);
             t.commit();
-            sess.close();
+            //sess.close();
             DPAServer.this.allBoards.get(owner).appendAnnouncement(announcement);
         }
 
-    }
-
-    public Session openSession() {
-        return sf.openSession();
     }
 
     public static int getPort() {

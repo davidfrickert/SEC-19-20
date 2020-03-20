@@ -7,15 +7,18 @@ import java.security.PublicKey;
 @Entity
 public class UserBoard extends Board {
 
-    @Column(columnDefinition = "VARBINARY(4096)")
-    private final PublicKey owner;
+    @Column(columnDefinition = "VARBINARY(4096)", nullable = false)
+    private PublicKey owner;
 
     public UserBoard(PublicKey owner) {
         this.owner = owner;
     }
 
+    // needed for hibernate
+    private UserBoard() {}
+
     public void appendAnnouncement(Announcement a) {
-        if (a.getKey() != this.owner) throw new IllegalArgumentException("Attempt to insert Announcement into wrong board.");
+        if (! a.getKey().equals(this.owner)) throw new IllegalArgumentException("Attempt to insert Announcement into wrong board.");
         this.appendAnnouncement(a);
     }
 

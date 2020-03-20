@@ -11,8 +11,19 @@ public abstract class Board {
     private Long id;
 
     @OneToMany
-    @JoinColumn(name = "board_announcements")
+    @JoinTable(
+            name = "board_announcements",
+            joinColumns = @JoinColumn(name = "board_id"),
+            inverseJoinColumns = @JoinColumn(name = "announcement_id")
+    )
     private List<Announcement> announcements = new ArrayList<>();
+
+    public Board() {}
+
+    public Board(Long id, List<Announcement> announcements) {
+        this.id = id;
+        this.announcements = announcements;
+    }
 
     public void appendAnnouncement(Announcement a) {
         this.announcements.add(a);
