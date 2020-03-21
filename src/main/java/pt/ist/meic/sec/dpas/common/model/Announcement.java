@@ -51,7 +51,11 @@ public class Announcement implements Serializable {
         return ArrayUtils.bytesToGeneric(bytes);
     }
 
-    public PublicKey getKey() {
+    public BigInteger getId() {
+        return id;
+    }
+
+    public PublicKey getOwnerKey() {
         return creatorId;
     }
 }

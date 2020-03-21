@@ -89,9 +89,6 @@ public class ClientLibrary {
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-
-
-
     }
 
     public void post(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
