@@ -7,7 +7,7 @@ import java.security.PublicKey;
 @Entity
 public class UserBoard extends Board {
 
-    @Column(columnDefinition = "VARBINARY(4096)", nullable = false)
+    @Column(columnDefinition = "VARBINARY(4096)")
     private PublicKey owner;
 
     public UserBoard(PublicKey owner) {

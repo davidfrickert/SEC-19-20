@@ -1,6 +1,7 @@
 package pt.ist.meic.sec.dpas.server;
 
 import org.apache.log4j.Logger;
+import org.h2.engine.User;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import pt.ist.meic.sec.dpas.common.Operation;
@@ -14,7 +15,7 @@ import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
-import pt.ist.meic.sec.dpas.common.utils.DAO;
+import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -45,6 +46,11 @@ public class DPAServer {
     private static ServerSocket server;
     private static int port = 9876;
 
+    private DAO<UserBoard, Long> userBoardDAO = new DAO<>(UserBoard.class);
+    private DAO<GeneralBoard, Long> generalBoardDAO = new DAO<>(GeneralBoard.class);
+    private DAO<Announcement, BigInteger> announcementDAO = new DAO<>(Announcement.class);
+
+
     public DPAServer() throws IOException {
         this.clientPKs = loadPublicKeys();
         this.privateKey = loadPrivateKey("keys/private/priv-server.der");
@@ -63,23 +69,13 @@ public class DPAServer {
     }
 
     private void initUserBoards() {
-
-        Session s = DAO.openSession();
-
-
-        CriteriaBuilder cb = s.getCriteriaBuilder();
-        CriteriaQuery<UserBoard> c = cb.createQuery(UserBoard.class);
-        c.from(UserBoard.class);
-
-
-        Map<PublicKey, UserBoard> boards = s.createQuery(c).getResultStream().collect(Collectors.toMap(
+        Map<PublicKey, UserBoard> boards = userBoardDAO.findAllAsStream().collect(Collectors.toMap(
                 UserBoard::getOwner, u -> u));
-
 
         for (PublicKey id : clientPKs) {
             if (! boards.containsKey(id)) {
                 UserBoard u = new UserBoard(id);
-                DAO.persist(u);
+                userBoardDAO.persist(u);
                 boards.put(id, u);
             }
         }
@@ -88,19 +84,13 @@ public class DPAServer {
     }
 
     private void initGeneralBoard() {
-        Session s = DAO.openSession();
-        CriteriaBuilder cb = s.getCriteriaBuilder();
-        CriteriaQuery<GeneralBoard> c = cb.createQuery(GeneralBoard.class);
-        c.from(GeneralBoard.class);
-        List<GeneralBoard> general = s.createQuery(c).getResultStream().collect(Collectors.toList());
-        GeneralBoard generalBoard = null;
-        if (general.isEmpty()) {
-            generalBoard = new GeneralBoard();
+        List<GeneralBoard> generalBoards = generalBoardDAO.findAll();
+        if (generalBoards.isEmpty()) {
+            this.general = new GeneralBoard();
+            generalBoardDAO.persist(this.general);
         } else {
-            generalBoard = general.get(0);
+            this.general = generalBoards.get(0);
         }
-        this.general = generalBoard;
-        s.close();
     }
 
     public void listen() {
@@ -177,7 +167,7 @@ public class DPAServer {
             Announcement announcement = new Announcement(a, owner, linked);
             sess.save(announcement);
             t.commit();
-            //sess.close();
+            sess.close();
             DPAServer.this.allBoards.get(owner).appendAnnouncement(announcement);
         }
 
