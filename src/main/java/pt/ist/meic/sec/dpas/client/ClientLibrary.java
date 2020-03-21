@@ -62,6 +62,23 @@ public class ClientLibrary {
         }
     }
 
+    private void write(EncryptedPayload e) {
+        boolean done = false;
+        int attempts = 0;
+        while (!done && attempts < 10) {
+            try {
+                out.writeObject(e);
+                done = true;
+            } catch (SocketException se) {
+                logger.info("Failed to send.. Retrying connection");
+                connect();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+            attempts++;
+        }
+    }
+
     public void stop() throws IOException {
         in.close();
         out.close();
@@ -75,7 +92,7 @@ public class ClientLibrary {
 
         EncryptedPayload ePayload = new RegisterPayload(key, op, time).encrypt(serverKey, privateKey);
         try {
-            out.writeObject(ePayload);
+            write(ePayload);
             logger.info("Sent REGISTER");
             EncryptedPayload ep = (EncryptedPayload) in.readObject();
             DecryptedPayload dp = ep.decrypt(privateKey);
@@ -97,15 +114,23 @@ public class ClientLibrary {
         Operation op = Operation.POST;
 
         EncryptedPayload ePayload = new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
+
+        write(ePayload);
+        logger.info("Sent POST with message: " + message + ", linked to: " + announcements);
+        EncryptedPayload ep = null;
         try {
-            out.writeObject(ePayload);
-            logger.info("Sent POST with message: " + message + ", linked to: " + announcements);
-        } catch (SocketException e) {
-            logger.info("Reconnecting to server");
-            connect();
-        } catch (IOException e) {
+            ep = (EncryptedPayload) in.readObject();
+            DecryptedPayload dp = ep.decrypt(privateKey);
+            boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
+            if (! correctSignature) {
+                logger.warn("Received POST Reply with bad signature");
+            } else {
+                logger.info("Received POST Reply correctly!");
+            }
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+
     }
 
     public void postGeneral(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
@@ -114,10 +139,20 @@ public class ClientLibrary {
         Operation op = Operation.POST_GENERAL;
 
         EncryptedPayload ePayload = new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
+
+        write(ePayload);
+        logger.info("Sent POST_GENERAL with message: " + message + ", linked to: " + announcements);
+        EncryptedPayload ep = null;
         try {
-            out.writeObject(ePayload);
-            logger.info("Sent POST_GENERAL with message: " + message + ", linked to: " + announcements);
-        } catch (IOException e) {
+            ep = (EncryptedPayload) in.readObject();
+            DecryptedPayload dp = ep.decrypt(privateKey);
+            boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
+            if (! correctSignature) {
+                logger.warn("Received POST_GENERAL Reply with bad signature");
+            } else {
+                logger.info("Received POST_GENERAL Reply correctly!");
+            }
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
@@ -128,11 +163,7 @@ public class ClientLibrary {
         Operation op = Operation.READ;
 
         EncryptedPayload ePayload = new ReadPayload(number, key, op, time).encrypt(serverKey, privateKey);
-        try {
-            out.writeObject(ePayload);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        write(ePayload);
     }
 
     public void readGeneral(BigInteger number, PrivateKey privateKey) {
@@ -140,11 +171,7 @@ public class ClientLibrary {
         Operation op = Operation.READ_GENERAL;
 
         EncryptedPayload ePayload = new ReadPayload(number, null, op, time).encrypt(serverKey, privateKey);
-        try {
-            out.writeObject(ePayload);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        write(ePayload);
     }
 
     /**

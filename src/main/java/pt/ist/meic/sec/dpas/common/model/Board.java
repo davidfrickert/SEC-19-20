@@ -27,7 +27,7 @@ public abstract class Board {
     )
     private Map<BigInteger, Announcement> announcements = new HashMap<>();
 
-    public Board() {}
+    public Board() { }
 
     public Board(Long id, Map<BigInteger, Announcement> announcements) {
         this.id = id;
@@ -43,7 +43,4 @@ public abstract class Board {
     public Optional<Announcement> getById(BigInteger Id) {
         return Optional.ofNullable(announcements.get(Id));
     }
-
-
-
 }

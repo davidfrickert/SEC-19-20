@@ -8,16 +8,11 @@ import org.hibernate.boot.Metadata;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import pt.ist.meic.sec.dpas.common.model.UserBoard;
-import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import java.io.Serializable;
-import java.lang.reflect.ParameterizedType;
-import java.security.PublicKey;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

@@ -1,7 +1,6 @@
 package pt.ist.meic.sec.dpas.server;
 
 import org.apache.log4j.Logger;
-import org.h2.engine.User;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import pt.ist.meic.sec.dpas.common.Operation;
@@ -20,8 +19,6 @@ import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -147,6 +144,7 @@ public class DPAServer {
                             case POST:
                                 yield handlePost((PostPayload) dp);
                             case POST_GENERAL:
+                                yield handlePostGeneral((PostPayload) dp);
                             case READ:
                             case READ_GENERAL:
                                 yield null;
@@ -164,23 +162,29 @@ public class DPAServer {
             Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements());
             announcementDAO.persist(a);
             allBoards.get(p.getSenderKey()).appendAnnouncement(a);
-            return new ACKPayload(DPAServer.this.publicKey, Operation.REGISTER, Instant.now(),
+            return new ACKPayload(DPAServer.this.publicKey, Operation.POST, Instant.now(),
                     new StatusMessage(Status.Success, "OK")).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
         }
 
-        private void handlePostGeneral(PostPayload p) {
+        private EncryptedPayloadReply handlePostGeneral(PostPayload p) {
+            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements());
+            announcementDAO.persist(a);
+            general.appendAnnouncement(a);
+            return new ACKPayload(DPAServer.this.publicKey, Operation.POST_GENERAL, Instant.now(),
+                    new StatusMessage(Status.Success, "OK")).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
+        }
+
+        private EncryptedPayloadReply handleRead(ReadPayload p) {
+            return null;
+        }
+
+        private EncryptedPayloadReply handleReadGeneral(ReadPayload p) {
+            return null;
 
         }
 
-        private void handleRead(ReadPayload p) {
-
-        }
-
-        private void handleReadGeneral(ReadPayload p) {
-
-        }
-
-        private void handleRegister(RegisterPayload p) {
+        private EncryptedPayloadReply handleRegister(RegisterPayload p) {
+            return null;
 
         }
 
