@@ -45,4 +45,12 @@ public class EncryptedPayloadRequest extends EncryptedPayload {
 
         return dp;
     }
+
+    public byte[] getMessage() {
+        return message;
+    }
+
+    public byte[] getLinkedAnnouncements() {
+        return linkedAnnouncements;
+    }
 }

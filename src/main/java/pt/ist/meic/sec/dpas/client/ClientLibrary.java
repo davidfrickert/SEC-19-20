@@ -1,5 +1,6 @@
 package pt.ist.meic.sec.dpas.client;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
@@ -32,7 +33,7 @@ public class ClientLibrary {
     private String ip;
     private int port;
 
-    public void start(String ip, int port) throws IOException {
+    public void start(String ip, int port) {
         this.ip = ip;
         this.port = port;
         connect();
@@ -85,104 +86,107 @@ public class ClientLibrary {
         clientSocket.close();
     }
 
-    public void register(PublicKey key, PrivateKey privateKey) {
+    public Pair<EncryptedPayload, EncryptedPayload> register(PublicKey key, PrivateKey privateKey) {
+        Operation op = Operation.REGISTER;
+        EncryptedPayload sentEncrypted = registerSend(key, privateKey);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendGeneral(sentEncrypted, op, privateKey);
+        DecryptedPayload receivedDecrypted = received.getLeft();
+        EncryptedPayload receivedEncrypted = received.getRight();
+        return Pair.of(sentEncrypted, receivedEncrypted);
+    }
+
+    public EncryptedPayload registerSend(PublicKey key, PrivateKey privateKey) {
         logger.info("Attempting REGISTER");
         Instant time = Instant.now();
         Operation op = Operation.REGISTER;
 
-        EncryptedPayload ePayload = new RegisterPayload(key, op, time).encrypt(serverKey, privateKey);
-        try {
-            write(ePayload);
-            logger.info("Sent REGISTER");
-            EncryptedPayload ep = (EncryptedPayload) in.readObject();
-            DecryptedPayload dp = ep.decrypt(privateKey);
-            boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
-            if (! correctSignature) {
-                logger.warn("Received REGISTER Reply with bad signature");
-            } else {
-                logger.info("Received REGISTER Reply correctly!");
-            }
-
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        return new RegisterPayload(key, op, time).encrypt(serverKey, privateKey);
     }
 
-    public void post(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
-        logger.info("Attempting POST");
-        Instant time = Instant.now();
+    public Pair<EncryptedPayload, EncryptedPayload> post(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
         Operation op = Operation.POST;
-
-        EncryptedPayload ePayload = new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
-
-        write(ePayload);
-        logger.info("Sent POST with message: " + message + ", linked to: " + announcements);
-        EncryptedPayload ep = null;
-        try {
-            ep = (EncryptedPayload) in.readObject();
-            DecryptedPayload dp = ep.decrypt(privateKey);
-            boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
-            if (! correctSignature) {
-                logger.warn("Received POST Reply with bad signature");
-            } else {
-                logger.info("Received POST Reply correctly!");
-            }
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public void postGeneral(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
-        logger.info("Attempting POST_GENERAL");
-        Instant time = Instant.now();
-        Operation op = Operation.POST_GENERAL;
-
-        EncryptedPayload ePayload = new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
-
-        write(ePayload);
-        logger.info("Sent POST_GENERAL with message: " + message + ", linked to: " + announcements);
-        EncryptedPayload ep = null;
-        try {
-            ep = (EncryptedPayload) in.readObject();
-            DecryptedPayload dp = ep.decrypt(privateKey);
-            boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
-            if (! correctSignature) {
-                logger.warn("Received POST_GENERAL Reply with bad signature");
-            } else {
-                logger.info("Received POST_GENERAL Reply correctly!");
-            }
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-    public void read(PublicKey key, BigInteger number, PrivateKey privateKey) {
-        Instant time = Instant.now();
-        Operation op = Operation.READ;
-
-        EncryptedPayload ePayload = new ReadPayload(number, key, op, time).encrypt(serverKey, privateKey);
-        write(ePayload);
-    }
-
-    public void readGeneral(BigInteger number, PrivateKey privateKey) {
-        Instant time = Instant.now();
-        Operation op = Operation.READ_GENERAL;
-
-        EncryptedPayload ePayload = new ReadPayload(number, null, op, time).encrypt(serverKey, privateKey);
-        write(ePayload);
+        EncryptedPayload sentEncrypted = sendPost(key, message, announcements, privateKey, op);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendGeneral(sentEncrypted, op, privateKey);
+        DecryptedPayload receivedDecrypted = received.getLeft();
+        EncryptedPayload receivedEncrypted = received.getRight();
+        return Pair.of(sentEncrypted, receivedEncrypted);
     }
 
     /**
-    public static void main(String[] args) {
-        try {
-            ClientLibrary c = new ClientLibrary();
-            c.start("127.0.0.1", 8081);
-            c.register(c.publicKey);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+     * Sends a POST payload to server
+     *
+     * @param key
+     * @param message
+     * @param announcements
+     * @param privateKey
+     * @return Payload sent to server
      */
+    public EncryptedPayload sendPost(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey, Operation op) {
+        if (op != Operation.POST && op != Operation.POST_GENERAL) {
+            throw new IllegalArgumentException("Wrong Operation for this method " + op.name());
+        }
+        logger.info("Attempting " + op.name());
+        Instant time = Instant.now();
+
+        return new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
+    }
+
+    public Pair<EncryptedPayload, EncryptedPayload> postGeneral(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
+        Operation op = Operation.POST_GENERAL;
+        EncryptedPayload sentEncrypted = sendPost(key, message, announcements, privateKey, op);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendGeneral(sentEncrypted, op, privateKey);
+        DecryptedPayload receivedDecrypted = received.getLeft();
+        EncryptedPayload receivedEncrypted = received.getRight();
+        return Pair.of(sentEncrypted, receivedEncrypted);
+    }
+
+
+    public Pair<EncryptedPayload, EncryptedPayload> read(PublicKey key, BigInteger number, PrivateKey privateKey) {
+        Operation op = Operation.READ;
+
+        EncryptedPayload sentEncrypted = sendRead(key, number, privateKey, op);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendGeneral(sentEncrypted, op, privateKey);
+        DecryptedPayload receivedDecrypted = received.getLeft();
+        EncryptedPayload receivedEncrypted = received.getRight();
+        return Pair.of(sentEncrypted, receivedEncrypted);
+    }
+
+    public EncryptedPayload sendRead(PublicKey key, BigInteger number, PrivateKey privateKey, Operation op) {
+        if (op != Operation.READ && op != Operation.READ_GENERAL) {
+            throw new IllegalArgumentException("Wrong Operation for this method " + op.name());
+        }
+        logger.info("Attempting READ");
+        Instant time = Instant.now();
+        return new ReadPayload(number, key, op, time).encrypt(serverKey, privateKey);
+    }
+
+
+    public Pair<EncryptedPayload, EncryptedPayload> readGeneral(BigInteger number, PrivateKey privateKey) {
+        Operation op = Operation.READ_GENERAL;
+
+        EncryptedPayload sentEncrypted = sendRead(null, number, privateKey, op);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendGeneral(sentEncrypted, op, privateKey);
+        DecryptedPayload receivedDecrypted = received.getLeft();
+        EncryptedPayload receivedEncrypted = received.getRight();
+        return Pair.of(sentEncrypted, receivedEncrypted);
+    }
+
+    public Pair<DecryptedPayload, EncryptedPayload> sendGeneral(EncryptedPayload e, Operation o, PrivateKey senderPrivateKey) {
+        write(e);
+
+        try {
+            EncryptedPayload ep = (EncryptedPayload) in.readObject();
+            DecryptedPayload dp = ep.decrypt(senderPrivateKey);
+            boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
+            if (! correctSignature) {
+                logger.warn("Received " + o.name() + " Reply with bad signature");
+            } else {
+                logger.info("Received " + o.name() + " Reply correctly!");
+            }
+            return Pair.of(dp, ep);
+        } catch (IOException | ClassNotFoundException exc) {
+            exc.printStackTrace();
+        }
+        return null;
+    }
 }

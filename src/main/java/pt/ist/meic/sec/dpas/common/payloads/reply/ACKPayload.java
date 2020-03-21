@@ -24,7 +24,6 @@ public class ACKPayload extends DecryptedPayload {
     public ACKPayload(PublicKey auth, Operation op, Instant timestamp, StatusMessage status) {
         super(auth, op, timestamp);
         this.status = status;
-        //logger.info("Created - " + op + ", " + status + ", " + timestamp + ", " + auth.hashCode());
     }
 
     @Override

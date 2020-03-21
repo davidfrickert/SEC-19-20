@@ -134,7 +134,25 @@ public class DPAServer {
 
                     if (!correctSignature) {
                         // handle logic for tampering attempt?
+                        logger.warn("Received " + dp.getOperation() + " with bad signature from " + dp.getSenderKey().hashCode());
+
+                        EncryptedPayload e = switch (dp.getOperation()) {
+                            case REGISTER:
+                                // do something about register in db or whatever.. and then return msg
+                                yield null;
+                            case POST:
+                                yield new ACKPayload(DPAServer.this.publicKey, Operation.POST, Instant.now(),
+                                    new StatusMessage(Status.InvalidRequest, "Message Tampered."))
+                                        .encrypt(dp.getSenderKey(), DPAServer.this.privateKey);
+                            case POST_GENERAL:
+                                yield null;
+                            case READ:
+                            case READ_GENERAL:
+                                yield null;
+                        };
+                        outStream.writeObject(e);
                     } else {
+                        logger.info("Received " + dp.getOperation() + " with correct signature from " + dp.getSenderKey().hashCode());
                         // handle regular logic
                         EncryptedPayload e = switch (dp.getOperation()) {
                             case REGISTER:
