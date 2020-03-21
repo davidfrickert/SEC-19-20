@@ -14,7 +14,10 @@ import pt.ist.meic.sec.dpas.common.model.UserBoard;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.EncryptedPayloadReply;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -80,7 +83,6 @@ public class DPAServer {
             }
         }
         this.allBoards = boards;
-       //s.close();
     }
 
     private void initGeneralBoard() {
@@ -143,10 +145,7 @@ public class DPAServer {
                                 yield new ACKPayload(DPAServer.this.publicKey, Operation.REGISTER, Instant.now(),
                                     new StatusMessage(Status.Success, "OK")).encrypt(dp.getSenderKey(), DPAServer.this.privateKey);
                             case POST:
-                                PostPayload p = (PostPayload) dp;
-                                saveAnnouncement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements());
-                                yield new ACKPayload(DPAServer.this.publicKey, Operation.REGISTER, Instant.now(),
-                                        new StatusMessage(Status.Success, "OK")).encrypt(dp.getSenderKey(), DPAServer.this.privateKey);
+                                yield handlePost((PostPayload) dp);
                             case POST_GENERAL:
                             case READ:
                             case READ_GENERAL:
@@ -159,6 +158,30 @@ public class DPAServer {
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+
+        private EncryptedPayloadReply handlePost(PostPayload p) {
+            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements());
+            announcementDAO.persist(a);
+            allBoards.get(p.getSenderKey()).appendAnnouncement(a);
+            return new ACKPayload(DPAServer.this.publicKey, Operation.REGISTER, Instant.now(),
+                    new StatusMessage(Status.Success, "OK")).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
+        }
+
+        private void handlePostGeneral(PostPayload p) {
+
+        }
+
+        private void handleRead(ReadPayload p) {
+
+        }
+
+        private void handleReadGeneral(ReadPayload p) {
+
+        }
+
+        private void handleRegister(RegisterPayload p) {
+
         }
 
         public void saveAnnouncement(String a, PublicKey owner, List<BigInteger> linked) {

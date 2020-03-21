@@ -18,16 +18,16 @@ public class Announcement implements Serializable {
     @Column(columnDefinition = "BIGINT")
     private BigInteger id;
 
-    private final String message;
+    private String message;
     private final Instant creationTime = Instant.now();
 
     @Column(columnDefinition = "VARBINARY(4096)")
-    private final PublicKey creatorId;
+    private PublicKey creatorId;
     @ElementCollection
     @CollectionTable(name="linked_announcements",
     joinColumns = @JoinColumn(name = "id", columnDefinition = "BIGINT"))
     @Column(columnDefinition = "BIGINT")
-    private final List<BigInteger> referred;
+    private List<BigInteger> referred;
 
     public Announcement(String message, PublicKey creatorId, List<BigInteger> referred) {
         this.message = message;
@@ -40,6 +40,8 @@ public class Announcement implements Serializable {
         this.creatorId = creatorId;
         this.referred = new ArrayList<>();
     }
+
+    private Announcement() {}
 
     public byte[] asBytes() {
         return ArrayUtils.objectToBytes(this);

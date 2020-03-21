@@ -1,6 +1,9 @@
 package pt.ist.meic.sec.dpas.common.model;
 
+import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
+
 import javax.persistence.*;
+import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +13,10 @@ public abstract class Board {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToMany
+    @Transient
+    private DAO<Board, Long> dao = new DAO<>(Board.class);
+
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(
             name = "board_announcements",
             joinColumns = @JoinColumn(name = "board_id"),
@@ -25,7 +31,9 @@ public abstract class Board {
         this.announcements = announcements;
     }
 
+    @Transactional
     public void appendAnnouncement(Announcement a) {
         this.announcements.add(a);
+        dao.update(this);
     }
 }

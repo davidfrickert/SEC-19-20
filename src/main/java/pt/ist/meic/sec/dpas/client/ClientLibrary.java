@@ -13,7 +13,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
+import java.net.ConnectException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
@@ -27,12 +29,37 @@ public class ClientLibrary {
     private ObjectInputStream in;
     public PublicKey serverKey;
 
-    public void start(String ip, int port) throws IOException {
-        clientSocket = new Socket(ip, port);
-        out = new ObjectOutputStream(clientSocket.getOutputStream());
-        in = new ObjectInputStream(clientSocket.getInputStream());
+    private String ip;
+    private int port;
 
+    public void start(String ip, int port) throws IOException {
+        this.ip = ip;
+        this.port = port;
+        connect();
         serverKey = KeyManager.loadPublicKey("keys/public/pub-server.der");
+    }
+
+    private void connect() {
+        boolean connected = false;
+
+        while (!connected) {
+            try {
+                clientSocket = new Socket(ip, port);
+                connected = true;
+                out = new ObjectOutputStream(clientSocket.getOutputStream());
+                in = new ObjectInputStream(clientSocket.getInputStream());
+                logger.info("Connected to " + ip + ":" + port);
+            } catch (IOException e) {
+                try {
+                    logger.info("Connection failure... Retrying in 3 seconds");
+                    Thread.sleep(3000);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                if (! (e instanceof  ConnectException))
+                e.printStackTrace();
+            }
+        }
     }
 
     public void stop() throws IOException {
@@ -76,6 +103,9 @@ public class ClientLibrary {
         try {
             out.writeObject(ePayload);
             logger.info("Sent POST with message: " + message + ", linked to: " + announcements);
+        } catch (SocketException e) {
+            logger.info("Reconnecting to server");
+            connect();
         } catch (IOException e) {
             e.printStackTrace();
         }
