@@ -1,5 +1,6 @@
 package pt.ist.meic.sec.dpas.common.payloads.common;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
@@ -9,6 +10,7 @@ import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
+import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 
 import java.math.BigInteger;
 import java.security.PublicKey;
@@ -23,7 +25,10 @@ public class PayloadFactory {
         DecryptedPayload decryptedPayload =  switch (o) {
             case REGISTER -> new RegisterPayload(key, o, timestamp);
             case POST, POST_GENERAL -> new PostPayload(new String(data), key, o, timestamp, linked);
-            case READ, READ_GENERAL -> new ReadPayload(new BigInteger(data), key, o, timestamp);
+            case READ, READ_GENERAL -> {
+                Pair<PublicKey, BigInteger> pair = (Pair<PublicKey, BigInteger>) ArrayUtils.bytesToObject(data);
+                yield new ReadPayload(pair, key, o, timestamp);
+            }
         };
         logger.info("Decrypted " + decryptedPayload);
         return decryptedPayload;

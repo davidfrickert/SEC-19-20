@@ -51,13 +51,15 @@ public class ClientExample {
                     System.exit(0);
                 }
             }
-            doAction(split[0], split);
+            doAction(line);
 
             System.out.print(">>");
         }
     }
 
-    public Pair<EncryptedPayload, EncryptedPayload> doAction(String action, String[] data) {
+    public Pair<EncryptedPayload, EncryptedPayload> doAction(String command) {
+        String[] data = command.split(" ");
+        String action = data[0];
         return switch (action.toLowerCase()) {
             case "register" -> library.register(publicKey, privateKey);
             case "post" -> {
@@ -72,14 +74,15 @@ public class ClientExample {
             }
             case "read" -> {
                 BigInteger nAnnounce = BigInteger.valueOf(Integer.parseInt(data[1]));
-                yield library.read(publicKey, nAnnounce, privateKey);
+                PublicKey boardKey = KeyManager.loadPublicKey(data[2]);
+                yield library.read(publicKey, boardKey, nAnnounce, privateKey);
             }
             case "readgeneral" -> {
                 BigInteger nAnnounceGen = BigInteger.valueOf(Integer.parseInt(data[1]));
-                yield library.readGeneral(nAnnounceGen, privateKey);
+                yield library.readGeneral(nAnnounceGen, publicKey, privateKey);
             }
             default -> {
-                logger.info("Invalid input, possibles are: register, post, postgeneral, read, readgeneral");
+                logger.info("Invalid input, possibles are: register, post, postgeneral, read, readgeneral (case is not relevant)");
                 yield null;
             }
         };

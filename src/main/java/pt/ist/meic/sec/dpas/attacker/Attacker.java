@@ -47,7 +47,7 @@ public class Attacker {
                 intercepted.getLinkedAnnouncements());
         // attempt with a random operation because attacker can't figure out which operation this message is because it's
         // encrypted..
-        Pair<DecryptedPayload, EncryptedPayload> response = library.sendGeneral(modifiedByAttacker, Operation.random(), privateKey);
+        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(modifiedByAttacker, Operation.random(), privateKey);
         return response.getLeft();
     }
 

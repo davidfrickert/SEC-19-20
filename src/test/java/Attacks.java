@@ -27,8 +27,8 @@ public class Attacks {
         serverThread.start();
 
         ClientExample c = new ClientExample();
-        String[] simulated = "post hello world".split(" ");
-        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(simulated[0], simulated);
+        String command = "post hello world";
+        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
 
         EncryptedPayload sentEncrypted = sentAndReceived.getLeft();
         EncryptedPayload receivedEncrypted = sentAndReceived.getRight();
@@ -42,6 +42,27 @@ public class Attacks {
             cce.printStackTrace();
         }
 
+    }
 
+    public void drop() throws IOException {
+        DPAServer s = new DPAServer();
+        Thread serverThread = new Thread (s::listen);
+        serverThread.start();
+
+        ClientExample c = new ClientExample();
+        String command = "post hello world";
+        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
+
+        EncryptedPayload sentEncrypted = sentAndReceived.getLeft();
+        EncryptedPayload receivedEncrypted = sentAndReceived.getRight();
+
+        Attacker attacker = new Attacker();
+        try {
+            // all replies can be casted to ACKPayload to view status message
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM);
+            assertEquals(p.getStatus().getStatus(), Status.InvalidRequest);
+        } catch (ClassCastException cce) {
+            cce.printStackTrace();
+        }
     }
 }
