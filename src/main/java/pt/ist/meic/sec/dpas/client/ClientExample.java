@@ -21,11 +21,15 @@ public class ClientExample {
 
     private PrivateKey privateKey;
     private PublicKey publicKey;
-    private PublicKey serverKey;
 
     private ClientLibrary library;
 
-    public ClientExample() throws IOException {
+    private String username;
+
+    public ClientExample(String username) throws IOException {
+
+        this.username = username;
+
         privateKey = KeyManager.loadPrivateKey("keys/private/clients/private1.der");
         publicKey = KeyManager.loadPublicKey("keys/public/clients/pub1.der");
 
@@ -38,16 +42,14 @@ public class ClientExample {
         Scanner sc = new Scanner(src);
         String line;
         String[] split;
-        Boolean quit = false;
         System.out.print(">>");
-        while(!quit) {
+        while(true) {
             line = sc.nextLine();
             split = line.split(" ");
             if (split[0].equals("quit")) {
                 System.out.print("Sure you want to leave? (Y = Yes, N = No) ");
                 String conf = sc.nextLine();
                 if(conf.equals("Y")) {
-                    quit = true;
                     System.exit(0);
                 }
             }
@@ -59,7 +61,7 @@ public class ClientExample {
 
     public Pair<EncryptedPayload, EncryptedPayload> doAction(String action, String[] data) {
         return switch (action.toLowerCase()) {
-            case "register" -> library.register(publicKey, privateKey);
+            case "register" -> library.register(username, publicKey, privateKey);
             case "post" -> {
                 String announcement = getAnnouncement(data);
                 List<BigInteger> prevAnnouncements = getPreviousAnnouncement(data);
@@ -87,9 +89,17 @@ public class ClientExample {
 
     public static void main(String[] args) throws IOException {
 
-        ClientExample c = new ClientExample();
-        c.input(System.in);
-
+        //program must be initialized with a username
+        String username;
+        if(args.length != 1){
+            System.out.println("ERROR: Wrong number of parameters.");
+            System.out.println("Correct usage: java ClientExample <username>");
+            System.exit(-1);
+        } else {
+            username = args[0];
+            ClientExample c = new ClientExample(username);
+            c.input(System.in);
+        }
     }
 
     private static String getAnnouncement(String[] line) {

@@ -18,7 +18,8 @@ public class EncryptedPayloadRequest extends EncryptedPayload {
 
     private final byte[] linkedAnnouncements;
 
-    public EncryptedPayloadRequest(PublicKey auth, byte[] operation, byte[] timestamp, byte[] signature, byte[] message, byte[] linkedAnnouncements) {
+    public EncryptedPayloadRequest(PublicKey auth, byte[] operation, byte[] timestamp, byte[] signature,
+                                   byte[] message, byte[] linkedAnnouncements) {
         super(auth, operation, timestamp, signature);
         this.message = message;
         this.linkedAnnouncements = linkedAnnouncements;
