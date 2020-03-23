@@ -33,8 +33,7 @@ public class RegisterPayload extends DecryptedPayload {
 
         byte[] signature = Crypto.sign(originalData, senderKey);
 
-        return new EncryptedPayloadRequest(idKey, encryptedOperation, encryptedTimestamp, signature, null,
-                null);
+        return new EncryptedPayloadRequest(idKey, encryptedOperation, encryptedTimestamp, signature, null);
     }
 
     @Override

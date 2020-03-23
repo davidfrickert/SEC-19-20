@@ -187,7 +187,9 @@ public class ClientLibrary {
         }
         logger.info("Attempting READ");
         Instant time = Instant.now();
-        return new ReadPayload(numberToFetch, boardKey, authKey, op, time).encrypt(serverKey, signKey);
+        ReadPayload r = new ReadPayload(numberToFetch, authKey, boardKey, op, time);
+        logger.info("Sending " + r.toString());
+        return r.encrypt(serverKey, signKey);
     }
 
     public Pair<DecryptedPayload, EncryptedPayload> sendPayloadToServer(EncryptedPayload e, Operation o

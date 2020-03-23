@@ -1,6 +1,5 @@
 package pt.ist.meic.sec.dpas.common.payloads.common;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
@@ -21,14 +20,11 @@ public class PayloadFactory {
     private final static Logger logger = Logger.getLogger(PayloadFactory.class);
 
     public static DecryptedPayload genRequestPayloadFromOperation(Operation o, byte[] data, PublicKey key, Instant timestamp,
-                                                                  List<BigInteger> linked) {
+                                                                  List<BigInteger> linked, PublicKey boardToReadFrom) {
         DecryptedPayload decryptedPayload =  switch (o) {
             case REGISTER -> new RegisterPayload(key, o, timestamp);
             case POST, POST_GENERAL -> new PostPayload(new String(data), key, o, timestamp, linked);
-            case READ, READ_GENERAL -> {
-                Pair<PublicKey, BigInteger> pair = (Pair<PublicKey, BigInteger>) ArrayUtils.bytesToObject(data);
-                yield new ReadPayload(pair, key, o, timestamp);
-            }
+            case READ, READ_GENERAL -> new ReadPayload((BigInteger)ArrayUtils.bytesToObject(data), key, boardToReadFrom, o, timestamp);
         };
         logger.info("Decrypted " + decryptedPayload);
         return decryptedPayload;

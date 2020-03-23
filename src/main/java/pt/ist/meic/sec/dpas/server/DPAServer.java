@@ -192,6 +192,7 @@ public class DPAServer {
         }
 
         private EncryptedPayloadReply handleRead(ReadPayload p) {
+            logger.info("User " + p.getSenderKey().hashCode() + " attempted to read User " + p.getBoardToReadFrom().hashCode() + " board!");
             return null;
         }
 
