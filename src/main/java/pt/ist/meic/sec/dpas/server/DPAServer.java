@@ -4,10 +4,7 @@ import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
-import pt.ist.meic.sec.dpas.common.model.Announcement;
-import pt.ist.meic.sec.dpas.common.model.Board;
-import pt.ist.meic.sec.dpas.common.model.GeneralBoard;
-import pt.ist.meic.sec.dpas.common.model.UserBoard;
+import pt.ist.meic.sec.dpas.common.model.*;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
@@ -47,7 +44,7 @@ public class DPAServer {
     private DAO<UserBoard, Long> userBoardDAO = new DAO<>(UserBoard.class);
     private DAO<GeneralBoard, Long> generalBoardDAO = new DAO<>(GeneralBoard.class);
     private DAO<Announcement, BigInteger> announcementDAO = new DAO<>(Announcement.class);
-
+    private DAO<User, Long> userDAO = new DAO<>(User.class);
 
     public DPAServer() throws IOException {
         this.clientPKs = loadPublicKeys();
@@ -155,8 +152,7 @@ public class DPAServer {
                         EncryptedPayload e = switch (dp.getOperation()) {
                             case REGISTER:
                                 // do something about register in db or whatever.. and then return msg
-                                yield new ACKPayload(DPAServer.this.publicKey, Operation.REGISTER, Instant.now(),
-                                    new StatusMessage(Status.Success, "OK")).encrypt(dp.getSenderKey(), DPAServer.this.privateKey);
+                                yield handleRegister((RegisterPayload) dp);
                             case POST:
                                 yield handlePost((PostPayload) dp);
                             case POST_GENERAL:
@@ -198,12 +194,14 @@ public class DPAServer {
 
         private EncryptedPayloadReply handleReadGeneral(ReadPayload p) {
             return null;
-
         }
 
-        private EncryptedPayloadReply handleRegister(RegisterPayload p) {
-            return null;
-
+        private EncryptedPayloadReply handleRegister(RegisterPayload p){
+                User u = new User(p.getSenderKey(), p.getData());
+                userDAO.persist(u);
+                return new ACKPayload(DPAServer.this.publicKey, Operation.REGISTER, Instant.now(),
+                        new StatusMessage(Status.Success, "OK"))
+                        .encrypt(p.getSenderKey(), DPAServer.this.privateKey);
         }
 
     }

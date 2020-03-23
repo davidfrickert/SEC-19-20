@@ -26,10 +26,9 @@ public class RegisterPayload extends DecryptedPayload {
         return ArrayUtils.merge(username.getBytes(), super.asBytes());
     }
 
-    // no data yet
     @Override
-    public Object getData() {
-        return null;
+    public String getData() {
+        return username;
     }
 
     @Override
@@ -43,8 +42,7 @@ public class RegisterPayload extends DecryptedPayload {
 
         byte[] signature = Crypto.sign(originalData, senderKey);
 
-        return new EncryptedPayloadRequest(idKey, encryptedOperation, encryptedTimestamp, signature, encryptedUsername,
-                null);
+        return new EncryptedPayloadRequest(idKey, encryptedOperation, encryptedTimestamp, signature, encryptedUsername);
     }
 
     @Override

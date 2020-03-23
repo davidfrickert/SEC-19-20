@@ -89,7 +89,7 @@ public class ClientLibrary {
     public Pair<EncryptedPayload, EncryptedPayload> register(String username, PublicKey key, PrivateKey privateKey) {
         Operation op = Operation.REGISTER;
         EncryptedPayload sentEncrypted = registerSend(username, key, privateKey);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendGeneral(sentEncrypted, op, privateKey);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, privateKey);
         DecryptedPayload receivedDecrypted = received.getLeft();
         EncryptedPayload receivedEncrypted = received.getRight();
         return Pair.of(sentEncrypted, receivedEncrypted);
@@ -109,7 +109,7 @@ public class ClientLibrary {
         return new RegisterPayload(username, key, op, time).encrypt(serverKey, privateKey);
     }
 
-    public Pair<EncryptedPayload, EncryptedPayload> post(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
+    public Pair<EncryptedPayload, EncryptedPayload> post(PublicKey authKey, String message, List<BigInteger> announcements, PrivateKey signKey) {
         Operation op = Operation.POST;
         EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
         Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
@@ -155,12 +155,12 @@ public class ClientLibrary {
      * @return EncryptedPayload to send
      */
 
-    public EncryptedPayload createEncryptedRegisterPayload(PublicKey authKey, PrivateKey signKey) {
+    public EncryptedPayload createEncryptedRegisterPayload(String username, PublicKey authKey, PrivateKey signKey) {
         logger.info("Attempting REGISTER");
         Instant time = Instant.now();
         Operation op = Operation.REGISTER;
 
-        return new RegisterPayload(authKey, op, time).encrypt(serverKey, signKey);
+        return new RegisterPayload(username, authKey, op, time).encrypt(serverKey, signKey);
     }
 
     /**
