@@ -3,8 +3,10 @@ package pt.ist.meic.sec.dpas.client;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
+import pt.ist.meic.sec.dpas.common.model.Announcement;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
@@ -121,6 +123,19 @@ public class ClientLibrary {
         Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
         DecryptedPayload receivedDecrypted = received.getLeft();
         EncryptedPayload receivedEncrypted = received.getRight();
+        AnnouncementsPayload announcementsPayload = (AnnouncementsPayload) receivedDecrypted;
+
+        logger.info("Got " + announcementsPayload.getAnnouncements().size() + " announcements.");
+
+        for (Announcement a : announcementsPayload.getAnnouncements()) {
+            logger.info("----Announcement----");
+            logger.info(a.getMessage());
+            logger.info(a.getId());
+            logger.info(a.getOwnerKey().hashCode());
+            logger.info(a.getCreationTime());
+            logger.info(a.getReferred());
+        }
+
         return Pair.of(sentEncrypted, receivedEncrypted);
     }
 

@@ -3,6 +3,7 @@ package pt.ist.meic.sec.dpas.common.model;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import java.security.PublicKey;
+import java.util.stream.Collectors;
 
 @Entity
 public class UserBoard extends Board {
@@ -24,5 +25,14 @@ public class UserBoard extends Board {
 
     public PublicKey getOwner() {
         return owner;
+    }
+
+
+    @Override
+    public String toString() {
+        return "UserBoard{" +
+                "owner=" + owner.hashCode() +
+                ", announcements=" + getAnnouncements().stream().map(Announcement::asString).collect(Collectors.toList()) +
+                '}';
     }
 }

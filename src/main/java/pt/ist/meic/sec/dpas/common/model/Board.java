@@ -3,11 +3,9 @@ package pt.ist.meic.sec.dpas.common.model;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 
 import javax.persistence.*;
-import javax.transaction.Transactional;
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 public abstract class Board {
@@ -34,13 +32,32 @@ public abstract class Board {
         this.announcements = announcements;
     }
 
-    @Transactional
     public void appendAnnouncement(Announcement a) {
         this.announcements.put(a.getId(), a);
         dao.update(this);
     }
 
+    public List<Announcement> getNAnnouncements(int n) {
+        List<Announcement> allAnnouncements = getAnnouncements();
+        System.out.println("Retrieving...");
+        System.out.println(allAnnouncements.stream().map(Announcement::asString).collect(Collectors.toList()));
+        if (n == 0) return allAnnouncements;
+        System.out.println("Retrieving " + n);
+        return allAnnouncements.subList(allAnnouncements.size() - n, allAnnouncements.size());
+    }
+
     public Optional<Announcement> getById(BigInteger Id) {
         return Optional.ofNullable(announcements.get(Id));
+    }
+
+    public List<Announcement> getAnnouncements() {
+        return new ArrayList<>(announcements.values());
+    }
+
+    @Override
+    public String toString() {
+        return "Board{" +
+                "announcements=" + getAnnouncements() +
+                '}';
     }
 }

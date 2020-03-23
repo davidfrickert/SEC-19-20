@@ -23,7 +23,7 @@ public class Announcement implements Serializable {
 
     @Column(columnDefinition = "VARBINARY(4096)")
     private PublicKey creatorId;
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name="linked_announcements",
     joinColumns = @JoinColumn(name = "id", columnDefinition = "BIGINT"))
     @Column(columnDefinition = "BIGINT")
@@ -57,5 +57,31 @@ public class Announcement implements Serializable {
 
     public PublicKey getOwnerKey() {
         return creatorId;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public Instant getCreationTime() {
+        return creationTime;
+    }
+
+    public PublicKey getCreatorId() {
+        return creatorId;
+    }
+
+    public List<BigInteger> getReferred() {
+        return referred;
+    }
+
+    public String asString() {
+        return "Announcement{" +
+                "id=" + id +
+                ", message='" + message + '\'' +
+                ", creationTime=" + creationTime +
+                ", creatorId=" + creatorId.hashCode() +
+                ", referred=" + referred +
+                '}';
     }
 }

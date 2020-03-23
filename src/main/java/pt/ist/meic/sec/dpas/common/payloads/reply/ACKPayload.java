@@ -53,8 +53,7 @@ public class ACKPayload extends DecryptedPayload {
 
 
 
-        return new EncryptedPayloadReply(idKey, encryptedOperation,encryptedTimestamp, signature, encryptedStatusMsg
-                , null );
+        return new EncryptedPayloadReply(idKey, encryptedOperation,encryptedTimestamp, signature, encryptedStatusMsg);
     }
 
     @Override

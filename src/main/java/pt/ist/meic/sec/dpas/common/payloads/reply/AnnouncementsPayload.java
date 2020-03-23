@@ -41,7 +41,6 @@ public class AnnouncementsPayload extends ACKPayload {
         byte[] encryptedOperation = Crypto.encryptBytes(this.getOperation().name().getBytes(), receiverKey);
         byte[] encryptedTimestamp = Crypto.encryptBytes(this.getTimestamp().toString().getBytes(), receiverKey);
         byte[] encryptedStatusMsg = Crypto.encryptBytes(this.getStatus().asBytes(), receiverKey);
-        byte[] encryptedAnnouncements = Crypto.encryptBytes(ArrayUtils.objectToBytes(this.announcements), receiverKey);
 
         byte[] originalData = this.asBytes();
 
@@ -49,8 +48,8 @@ public class AnnouncementsPayload extends ACKPayload {
 
 
 
-        return new EncryptedPayloadReply(idKey, encryptedOperation,encryptedTimestamp, signature, encryptedStatusMsg
-                , encryptedAnnouncements );
+        return new EncryptedPayloadRead(idKey, encryptedOperation,encryptedTimestamp, signature, encryptedStatusMsg
+                , this.announcements );
     }
 
     @Override

@@ -11,6 +11,7 @@ import pt.ist.meic.sec.dpas.common.model.UserBoard;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.EncryptedPayloadReply;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
@@ -77,6 +78,7 @@ public class DPAServer {
                 boards.put(id, u);
             }
         }
+        boards.values().forEach(u -> logger.info("UserBoard loaded: " + u));
         this.allBoards = boards;
     }
 
@@ -88,6 +90,7 @@ public class DPAServer {
         } else {
             this.general = generalBoards.get(0);
         }
+        logger.info("GeneralBoard loaded: " + this.general.toString());
     }
 
     public void listen() {
@@ -180,7 +183,7 @@ public class DPAServer {
             announcementDAO.persist(a);
             allBoards.get(p.getSenderKey()).appendAnnouncement(a);
             return new ACKPayload(DPAServer.this.publicKey, Operation.POST, Instant.now(),
-                    new StatusMessage(Status.Success, "OK")).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
+                    new StatusMessage(Status.Success)).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
         }
 
         private EncryptedPayloadReply handlePostGeneral(PostPayload p) {
@@ -188,12 +191,16 @@ public class DPAServer {
             announcementDAO.persist(a);
             general.appendAnnouncement(a);
             return new ACKPayload(DPAServer.this.publicKey, Operation.POST_GENERAL, Instant.now(),
-                    new StatusMessage(Status.Success, "OK")).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
+                    new StatusMessage(Status.Success)).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
         }
 
         private EncryptedPayloadReply handleRead(ReadPayload p) {
             logger.info("User " + p.getSenderKey().hashCode() + " attempted to read User " + p.getBoardToReadFrom().hashCode() + " board!");
-            return null;
+            PublicKey boardKey = p.getBoardToReadFrom();
+            UserBoard board = allBoards.get(boardKey);
+            List<Announcement> announcements = board.getNAnnouncements(p.getData().intValue());
+            return new AnnouncementsPayload(DPAServer.this.publicKey, Operation.READ, Instant.now(),
+                    new StatusMessage(Status.Success), announcements).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
         }
 
         private EncryptedPayloadReply handleReadGeneral(ReadPayload p) {
