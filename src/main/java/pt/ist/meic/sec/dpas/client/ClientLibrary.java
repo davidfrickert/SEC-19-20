@@ -88,13 +88,27 @@ public class ClientLibrary {
         clientSocket.close();
     }
 
-    public Pair<EncryptedPayload, EncryptedPayload> register(PublicKey authKey, PrivateKey signKey) {
+    public Pair<EncryptedPayload, EncryptedPayload> register(String username, PublicKey key, PrivateKey privateKey) {
         Operation op = Operation.REGISTER;
-        EncryptedPayload sentEncrypted = createEncryptedRegisterPayload(authKey, signKey);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
+        EncryptedPayload sentEncrypted = registerSend(username, key, privateKey);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, privateKey);
         DecryptedPayload receivedDecrypted = received.getLeft();
         EncryptedPayload receivedEncrypted = received.getRight();
         return Pair.of(sentEncrypted, receivedEncrypted);
+    }
+
+    /**
+     *
+     * @param username String representing the username
+     * @param key Public key of the user
+     * @param privateKey Private key of the user
+     * @return Payload of register action encrypted
+     */
+    public EncryptedPayload registerSend(String username, PublicKey key, PrivateKey privateKey) {
+        logger.info("Attempting REGISTER");
+        Instant time = Instant.now();
+        Operation op = Operation.REGISTER;
+        return new RegisterPayload(username, key, op, time).encrypt(serverKey, privateKey);
     }
 
     public Pair<EncryptedPayload, EncryptedPayload> post(PublicKey authKey, String message, List<BigInteger> announcements, PrivateKey signKey) {
@@ -156,12 +170,12 @@ public class ClientLibrary {
      * @return EncryptedPayload to send
      */
 
-    public EncryptedPayload createEncryptedRegisterPayload(PublicKey authKey, PrivateKey signKey) {
+    public EncryptedPayload createEncryptedRegisterPayload(String username, PublicKey authKey, PrivateKey signKey) {
         logger.info("Attempting REGISTER");
         Instant time = Instant.now();
         Operation op = Operation.REGISTER;
 
-        return new RegisterPayload(authKey, op, time).encrypt(serverKey, signKey);
+        return new RegisterPayload(username, authKey, op, time).encrypt(serverKey, signKey);
     }
 
     /**
