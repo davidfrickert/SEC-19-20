@@ -111,73 +111,103 @@ public class ClientLibrary {
 
     public Pair<EncryptedPayload, EncryptedPayload> post(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
         Operation op = Operation.POST;
-        EncryptedPayload sentEncrypted = sendPost(key, message, announcements, privateKey, op);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendGeneral(sentEncrypted, op, privateKey);
+        EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
+        DecryptedPayload receivedDecrypted = received.getLeft();
+        EncryptedPayload receivedEncrypted = received.getRight();
+        return Pair.of(sentEncrypted, receivedEncrypted);
+    }
+
+    public Pair<EncryptedPayload, EncryptedPayload> postGeneral(PublicKey authKey, String message, List<BigInteger> announcements, PrivateKey signKey) {
+        Operation op = Operation.POST_GENERAL;
+        EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
+        DecryptedPayload receivedDecrypted = received.getLeft();
+        EncryptedPayload receivedEncrypted = received.getRight();
+        return Pair.of(sentEncrypted, receivedEncrypted);
+    }
+
+
+    public Pair<EncryptedPayload, EncryptedPayload> read(PublicKey authKey, PublicKey boardKey, BigInteger numberToRead, PrivateKey signKey) {
+        Operation op = Operation.READ;
+
+        EncryptedPayload sentEncrypted = createEncryptedReadPayload(authKey, boardKey, numberToRead, signKey, op);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
+        DecryptedPayload receivedDecrypted = received.getLeft();
+        EncryptedPayload receivedEncrypted = received.getRight();
+        return Pair.of(sentEncrypted, receivedEncrypted);
+    }
+
+    public Pair<EncryptedPayload, EncryptedPayload> readGeneral(BigInteger number, PublicKey authKey, PrivateKey signKey) {
+        Operation op = Operation.READ_GENERAL;
+
+        EncryptedPayload sentEncrypted = createEncryptedReadPayload(authKey, null, number, signKey, op);
+        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
         DecryptedPayload receivedDecrypted = received.getLeft();
         EncryptedPayload receivedEncrypted = received.getRight();
         return Pair.of(sentEncrypted, receivedEncrypted);
     }
 
     /**
-     * Sends a POST payload to server
-     *
-     * @param key
-     * @param message
-     * @param announcements
-     * @param privateKey
-     * @return Payload sent to server
+     * Creates and encrypts a register payload
+     * @param authKey public key of sender of this payload
+     * @param signKey private key of sender of this payload (to sign)
+     * @return EncryptedPayload to send
      */
-    public EncryptedPayload sendPost(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey, Operation op) {
+
+    public EncryptedPayload createEncryptedRegisterPayload(PublicKey authKey, PrivateKey signKey) {
+        logger.info("Attempting REGISTER");
+        Instant time = Instant.now();
+        Operation op = Operation.REGISTER;
+
+        return new RegisterPayload(authKey, op, time).encrypt(serverKey, signKey);
+    }
+
+    /**
+     * Creates and encrypts a post/postGeneral payload
+     *
+     * @param authKey public key of sender of this payload
+     * @param announcementMessage announcement text
+     * @param linkedAnnouncements linked announcements (id's)
+     * @param signKey private key of sender of this payload (to sign)
+     * @param op operation (must be post or postGeneral)
+     * @return EncryptedPayload to send
+     */
+    public EncryptedPayload createEncryptedPostPayload(PublicKey authKey, String announcementMessage,
+                                                       List<BigInteger> linkedAnnouncements, PrivateKey signKey,
+                                                       Operation op) {
         if (op != Operation.POST && op != Operation.POST_GENERAL) {
             throw new IllegalArgumentException("Wrong Operation for this method " + op.name());
         }
         logger.info("Attempting " + op.name());
         Instant time = Instant.now();
 
-        return new PostPayload(message, key, op, time, announcements).encrypt(serverKey, privateKey);
+        return new PostPayload(announcementMessage, authKey, op, time, linkedAnnouncements).encrypt(serverKey, signKey);
     }
 
-    public Pair<EncryptedPayload, EncryptedPayload> postGeneral(PublicKey key, String message, List<BigInteger> announcements, PrivateKey privateKey) {
-        Operation op = Operation.POST_GENERAL;
-        EncryptedPayload sentEncrypted = sendPost(key, message, announcements, privateKey, op);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendGeneral(sentEncrypted, op, privateKey);
-        DecryptedPayload receivedDecrypted = received.getLeft();
-        EncryptedPayload receivedEncrypted = received.getRight();
-        return Pair.of(sentEncrypted, receivedEncrypted);
-    }
-
-
-    public Pair<EncryptedPayload, EncryptedPayload> read(PublicKey key, BigInteger number, PrivateKey privateKey) {
-        Operation op = Operation.READ;
-
-        EncryptedPayload sentEncrypted = sendRead(key, number, privateKey, op);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendGeneral(sentEncrypted, op, privateKey);
-        DecryptedPayload receivedDecrypted = received.getLeft();
-        EncryptedPayload receivedEncrypted = received.getRight();
-        return Pair.of(sentEncrypted, receivedEncrypted);
-    }
-
-    public EncryptedPayload sendRead(PublicKey key, BigInteger number, PrivateKey privateKey, Operation op) {
+    /**
+     *
+     * @param authKey public key of sender of this payload
+     * @param boardKey public key of the board to read from
+     * @param numberToFetch number of announcements to fetch (0 = all or 'n' to fetch 'n' most recent announcements)
+     * @param signKey private key of sender of this payload (to sign)
+     * @param op operation (must be read or readGeneral)
+     * @return EncryptedPayload to send
+     */
+    public EncryptedPayload createEncryptedReadPayload(PublicKey authKey, PublicKey boardKey,
+                                                       BigInteger numberToFetch, PrivateKey signKey, Operation op) {
         if (op != Operation.READ && op != Operation.READ_GENERAL) {
             throw new IllegalArgumentException("Wrong Operation for this method " + op.name());
         }
         logger.info("Attempting READ");
         Instant time = Instant.now();
-        return new ReadPayload(number, key, op, time).encrypt(serverKey, privateKey);
+        ReadPayload r = new ReadPayload(numberToFetch, authKey, boardKey, op, time);
+        logger.info("Sending " + r.toString());
+        return r.encrypt(serverKey, signKey);
     }
 
-
-    public Pair<EncryptedPayload, EncryptedPayload> readGeneral(BigInteger number, PrivateKey privateKey) {
-        Operation op = Operation.READ_GENERAL;
-
-        EncryptedPayload sentEncrypted = sendRead(null, number, privateKey, op);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendGeneral(sentEncrypted, op, privateKey);
-        DecryptedPayload receivedDecrypted = received.getLeft();
-        EncryptedPayload receivedEncrypted = received.getRight();
-        return Pair.of(sentEncrypted, receivedEncrypted);
-    }
-
-    public Pair<DecryptedPayload, EncryptedPayload> sendGeneral(EncryptedPayload e, Operation o, PrivateKey senderPrivateKey) {
+    public Pair<DecryptedPayload, EncryptedPayload> sendPayloadToServer(EncryptedPayload e, Operation o
+            , PrivateKey senderPrivateKey) {
         write(e);
 
         try {

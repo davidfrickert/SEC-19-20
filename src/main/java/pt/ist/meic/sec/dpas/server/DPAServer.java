@@ -1,8 +1,6 @@
 package pt.ist.meic.sec.dpas.server;
 
 import org.apache.log4j.Logger;
-import org.hibernate.Session;
-import org.hibernate.Transaction;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
@@ -164,8 +162,9 @@ public class DPAServer {
                             case POST_GENERAL:
                                 yield handlePostGeneral((PostPayload) dp);
                             case READ:
+                                yield handleRead((ReadPayload) dp);
                             case READ_GENERAL:
-                                yield null;
+                                yield handleReadGeneral((ReadPayload) dp);
                         };
                         outStream.writeObject(e);
                     }
@@ -193,6 +192,7 @@ public class DPAServer {
         }
 
         private EncryptedPayloadReply handleRead(ReadPayload p) {
+            logger.info("User " + p.getSenderKey().hashCode() + " attempted to read User " + p.getBoardToReadFrom().hashCode() + " board!");
             return null;
         }
 
@@ -204,16 +204,6 @@ public class DPAServer {
         private EncryptedPayloadReply handleRegister(RegisterPayload p) {
             return null;
 
-        }
-
-        public void saveAnnouncement(String a, PublicKey owner, List<BigInteger> linked) {
-            Session sess = DAO.getSf().getCurrentSession();
-            Transaction t = sess.beginTransaction();
-            Announcement announcement = new Announcement(a, owner, linked);
-            sess.save(announcement);
-            t.commit();
-            sess.close();
-            DPAServer.this.allBoards.get(owner).appendAnnouncement(announcement);
         }
 
     }

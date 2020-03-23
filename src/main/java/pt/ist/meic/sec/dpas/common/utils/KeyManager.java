@@ -3,14 +3,13 @@ package pt.ist.meic.sec.dpas.common.utils;
 import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -76,6 +75,17 @@ public class KeyManager {
         } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
             logger.info("Failed to load public key from file '" + path + "'. " + e.getClass().getSimpleName() + " - " + e.getMessage());
             logger.debug(new File(".").getAbsolutePath());
+            throw new IllegalStateException();
+        }
+    }
+
+    public static KeyStore loadKeyStore(String path, String password) {
+        try {
+            KeyStore store = KeyStore.getInstance("PKCS12");
+            store.load(new FileInputStream(path), password.toCharArray());
+            return store;
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+            e.printStackTrace();
             throw new IllegalStateException();
         }
     }

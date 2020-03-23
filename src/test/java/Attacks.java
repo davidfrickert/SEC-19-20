@@ -27,8 +27,8 @@ public class Attacks {
         serverThread.start();
 
         ClientExample c = new ClientExample();
-        String[] simulated = "post hello world".split(" ");
-        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(simulated[0], simulated);
+        String command = "post hello world";
+        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
 
         EncryptedPayload sentEncrypted = sentAndReceived.getLeft();
         EncryptedPayload receivedEncrypted = sentAndReceived.getRight();
@@ -42,6 +42,9 @@ public class Attacks {
             cce.printStackTrace();
         }
 
+    }
+
+    public void drop() {
 
     }
 }

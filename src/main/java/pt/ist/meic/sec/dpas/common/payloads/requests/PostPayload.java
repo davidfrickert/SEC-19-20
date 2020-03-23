@@ -47,7 +47,7 @@ public class PostPayload extends DecryptedPayload {
 
         byte[] signature = Crypto.sign(originalData, senderKey);
 
-        return new EncryptedPayloadRequest(idKey, encryptedOperation, encryptedTimestamp, signature, encryptedData,
+        return new EncryptedPayloadPost(idKey, encryptedOperation, encryptedTimestamp, signature, encryptedData,
                 encryptedLinkedAnnouncements);
     }
 

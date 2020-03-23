@@ -43,11 +43,10 @@ public class Attacker {
     private DecryptedPayload mitm(EncryptedPayloadRequest intercepted) {
         // PublicKey auth, byte[] operation, byte[] timestamp, byte[] signature, byte[] message, byte[] linkedAnnouncements
         EncryptedPayload modifiedByAttacker = new EncryptedPayloadRequest(this.publicKey, intercepted.getOperation(),
-                intercepted.getTimestamp(), intercepted.getSignature(), intercepted.getMessage(),
-                intercepted.getLinkedAnnouncements());
+                intercepted.getTimestamp(), intercepted.getSignature(), intercepted.getMessage());
         // attempt with a random operation because attacker can't figure out which operation this message is because it's
         // encrypted..
-        Pair<DecryptedPayload, EncryptedPayload> response = library.sendGeneral(modifiedByAttacker, Operation.random(), privateKey);
+        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(modifiedByAttacker, Operation.random(), privateKey);
         return response.getLeft();
     }
 

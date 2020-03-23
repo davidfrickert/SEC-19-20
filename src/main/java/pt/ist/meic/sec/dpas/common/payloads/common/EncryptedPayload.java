@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-
 public abstract class EncryptedPayload implements Serializable {
     private final static Logger logger = Logger.getLogger(EncryptedPayload.class);
 
