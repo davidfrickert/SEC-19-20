@@ -20,6 +20,7 @@
         <property name="hbm2ddl.auto">update</property>
         <property name="hibernate.current_session_context_class">thread</property>
         <property name="hibernate.enable_lazy_load_no_trans">true</property>
+        <mapping class="pt.ist.meic.sec.dpas.common.model.User"/>
         <mapping class="pt.ist.meic.sec.dpas.common.model.Announcement"/>
         <mapping class="pt.ist.meic.sec.dpas.common.model.Board"/>
         <mapping class="pt.ist.meic.sec.dpas.common.model.UserBoard"/>

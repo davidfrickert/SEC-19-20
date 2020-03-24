@@ -6,32 +6,63 @@ import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.net.UnknownHostException;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.security.cert.Certificate;
 
 public class ClientExample {
     private final static Logger logger = Logger.getLogger(ClientExample.class);
+    private static final String KEYSTORE_PATH = "myClient.keyStore";
+    private static final String KEYSTORE_ALIAS = "myClient";
 
-    private PrivateKey privateKey;
-    private PublicKey publicKey;
+    private KeyPair keyPair;
 
     private ClientLibrary library;
 
     private String username;
 
-    public ClientExample(String username) throws IOException {
+    public ClientExample(String username) throws UnknownHostException {
 
         this.username = username;
 
-        privateKey = KeyManager.loadPrivateKey("keys/private/clients/private1.der");
-        publicKey = KeyManager.loadPublicKey("keys/public/clients/pub1.der");
+        try{
+            FileInputStream is = new FileInputStream(KEYSTORE_PATH);
+
+            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+            keystore.load(is, "client".toCharArray());
+
+            Key key = keystore.getKey(KEYSTORE_ALIAS, "client".toCharArray());
+            if (key instanceof PrivateKey) {
+                // Get certificate of public key
+                Certificate cert = keystore.getCertificate(KEYSTORE_ALIAS);
+
+                // Get public key
+                PublicKey publicKey = cert.getPublicKey();
+
+                // Return a key pair
+                this.keyPair = new KeyPair(publicKey, (PrivateKey) key);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableKeyException e) {
+            e.printStackTrace();
+        }
 
         InetAddress host = InetAddress.getLocalHost();
         library = new ClientLibrary();
@@ -63,25 +94,25 @@ public class ClientExample {
         String[] data = command.split(" ");
         String action = data[0];
         return switch (action.toLowerCase()) {
-            case "register" -> library.register(username, publicKey, privateKey);
+            case "register" -> library.register(username, keyPair.getPublic(), keyPair.getPrivate());
             case "post" -> {
                 String announcement = getAnnouncement(data);
                 List<BigInteger> prevAnnouncements = getPreviousAnnouncement(data);
-                yield library.post(publicKey, announcement, prevAnnouncements, privateKey);
+                yield library.post(keyPair.getPublic(), announcement, prevAnnouncements, keyPair.getPrivate());
             }
             case "postgeneral" -> {
                 String announcementGeneral = getAnnouncement(data);
                 List<BigInteger> prevAnnouncementsGen = getPreviousAnnouncement(data);
-                yield library.postGeneral(publicKey, announcementGeneral, prevAnnouncementsGen, privateKey);
+                yield library.postGeneral(keyPair.getPublic(), announcementGeneral, prevAnnouncementsGen, keyPair.getPrivate());
             }
             case "read" -> {
                 BigInteger nAnnounce = BigInteger.valueOf(Integer.parseInt(data[1]));
                 PublicKey boardKey = KeyManager.loadPublicKey(data[2]);
-                yield library.read(publicKey, boardKey, nAnnounce, privateKey);
+                yield library.read(keyPair.getPublic(), boardKey, nAnnounce, keyPair.getPrivate());
             }
             case "readgeneral" -> {
                 BigInteger nAnnounceGen = BigInteger.valueOf(Integer.parseInt(data[1]));
-                yield library.readGeneral(nAnnounceGen, publicKey, privateKey);
+                yield library.readGeneral(nAnnounceGen, keyPair.getPublic(), keyPair.getPrivate());
             }
             default -> {
                 logger.info("Invalid input, possibles are: register, post, postgeneral, read, readgeneral (case is not relevant)");

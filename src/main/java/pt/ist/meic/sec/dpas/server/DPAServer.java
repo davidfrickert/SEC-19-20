@@ -15,14 +15,16 @@ import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -32,25 +34,53 @@ import static pt.ist.meic.sec.dpas.common.utils.KeyManager.*;
 
 public class DPAServer {
     private final static Logger logger = Logger.getLogger(DPAServer.class);
+    private static final String KEYSTORE_PATH = "myServer.keyStore";
+    private static final String KEYSTORE_ALIAS = "myServer";
 
     private List<PublicKey> clientPKs;
     private Map<PublicKey, UserBoard> allBoards;
     private Board general;
-    private PrivateKey privateKey;
-    private PublicKey publicKey;
 
     private static ServerSocket server;
     private static int port = 9876;
 
+    private KeyPair keyPair;
+
     private DAO<UserBoard, Long> userBoardDAO = new DAO<>(UserBoard.class);
     private DAO<GeneralBoard, Long> generalBoardDAO = new DAO<>(GeneralBoard.class);
     private DAO<Announcement, BigInteger> announcementDAO = new DAO<>(Announcement.class);
-    private DAO<User, Long> userDAO = new DAO<>(User.class);
+    private DAO<User, Integer> userDAO = new DAO<>(User.class);
 
     public DPAServer() throws IOException {
         this.clientPKs = loadPublicKeys();
-        this.privateKey = loadPrivateKey("keys/private/priv-server.der");
-        this.publicKey = loadPublicKey("keys/public/pub-server.der");
+        try{
+            FileInputStream is = new FileInputStream(KEYSTORE_PATH);
+
+            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+            keystore.load(is, "server".toCharArray());
+
+            Key key = keystore.getKey(KEYSTORE_ALIAS, "server".toCharArray());
+            if (key instanceof PrivateKey) {
+                // Get certificate of public key
+                Certificate cert = keystore.getCertificate(KEYSTORE_ALIAS);
+
+                // Get public key
+                PublicKey publicKey = cert.getPublicKey();
+
+                // Return a key pair
+                this.keyPair = new KeyPair(publicKey, (PrivateKey) key);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableKeyException e) {
+            e.printStackTrace();
+        }
         server = new ServerSocket(port);
 
         initBoards();
@@ -127,7 +157,7 @@ public class DPAServer {
                     // all operations send EncryptedPayload, so, read and cast
                     EncryptedPayload ep = (EncryptedPayload) inStream.readObject();
                     // decrypt with server privatekey
-                    DecryptedPayload dp = ep.decrypt(DPAServer.this.privateKey);
+                    DecryptedPayload dp = ep.decrypt(DPAServer.this.keyPair.getPrivate());
                     boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
 
                     if (!correctSignature) {
@@ -139,9 +169,9 @@ public class DPAServer {
                                 // do something about register in db or whatever.. and then return msg
                                 yield null;
                             case POST:
-                                yield new ACKPayload(DPAServer.this.publicKey, Operation.POST, Instant.now(),
+                                yield new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST, Instant.now(),
                                     new StatusMessage(Status.InvalidRequest, "Message Tampered."))
-                                        .encrypt(dp.getSenderKey(), DPAServer.this.privateKey);
+                                        .encrypt(dp.getSenderKey(), DPAServer.this.keyPair.getPrivate());
                             case POST_GENERAL:
                                 yield null;
                             case READ:
@@ -178,16 +208,16 @@ public class DPAServer {
             Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements());
             announcementDAO.persist(a);
             allBoards.get(p.getSenderKey()).appendAnnouncement(a);
-            return new ACKPayload(DPAServer.this.publicKey, Operation.POST, Instant.now(),
-                    new StatusMessage(Status.Success)).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
+            return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST, Instant.now(),
+                    new StatusMessage(Status.Success, "OK")).encrypt(p.getSenderKey(), DPAServer.this.keyPair.getPrivate());
         }
 
         private EncryptedPayloadReply handlePostGeneral(PostPayload p) {
             Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements());
             announcementDAO.persist(a);
             general.appendAnnouncement(a);
-            return new ACKPayload(DPAServer.this.publicKey, Operation.POST_GENERAL, Instant.now(),
-                    new StatusMessage(Status.Success)).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
+            return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST_GENERAL, Instant.now(),
+                    new StatusMessage(Status.Success, "OK")).encrypt(p.getSenderKey(), DPAServer.this.keyPair.getPrivate());
         }
 
         private EncryptedPayloadReply handleRead(ReadPayload p) {
@@ -195,8 +225,8 @@ public class DPAServer {
             PublicKey boardKey = p.getBoardToReadFrom();
             UserBoard board = allBoards.get(boardKey);
             List<Announcement> announcements = board.getNAnnouncements(p.getData().intValue());
-            return new AnnouncementsPayload(DPAServer.this.publicKey, Operation.READ, Instant.now(),
-                    new StatusMessage(Status.Success), announcements).encrypt(p.getSenderKey(), DPAServer.this.privateKey);
+            return new AnnouncementsPayload(DPAServer.this.keyPair.getPublic(), Operation.READ, Instant.now(),
+                    new StatusMessage(Status.Success), announcements).encrypt(p.getSenderKey(), DPAServer.this.keyPair.getPrivate());
         }
 
         private EncryptedPayloadReply handleReadGeneral(ReadPayload p) {
@@ -206,9 +236,9 @@ public class DPAServer {
         private EncryptedPayloadReply handleRegister(RegisterPayload p){
                 User u = new User(p.getSenderKey(), p.getData());
                 userDAO.persist(u);
-                return new ACKPayload(DPAServer.this.publicKey, Operation.REGISTER, Instant.now(),
+                return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.REGISTER, Instant.now(),
                         new StatusMessage(Status.Success, "OK"))
-                        .encrypt(p.getSenderKey(), DPAServer.this.privateKey);
+                        .encrypt(p.getSenderKey(), DPAServer.this.keyPair.getPrivate());
         }
 
     }

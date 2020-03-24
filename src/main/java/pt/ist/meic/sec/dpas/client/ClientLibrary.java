@@ -12,20 +12,22 @@ import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.math.BigInteger;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.util.List;
 
 public class ClientLibrary {
     private final static Logger logger = Logger.getLogger(ClientLibrary.class);
+    private static final String KEYSTORE_PATH = "myClient.keyStore";
+    private static final String CERT_ALIAS = "myServer";
+
 
     private Socket clientSocket;
     private ObjectOutputStream out;
@@ -39,7 +41,24 @@ public class ClientLibrary {
         this.ip = ip;
         this.port = port;
         connect();
-        serverKey = KeyManager.loadPublicKey("keys/public/pub-server.der");
+
+        try{
+            FileInputStream is = new FileInputStream(KEYSTORE_PATH);
+
+            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+            keystore.load(is, "client".toCharArray());
+            // Get certificate of server public key
+            Certificate cert = keystore.getCertificate(CERT_ALIAS);
+            serverKey = cert.getPublicKey();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
     }
 
     private void connect() {
