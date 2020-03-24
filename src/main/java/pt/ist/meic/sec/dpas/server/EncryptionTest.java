@@ -9,7 +9,6 @@ import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
 import java.io.IOException;
@@ -76,9 +75,9 @@ public class EncryptionTest {
     public static void main(String[] args) {
        EncryptionTest s = new EncryptionTest();
 
-       s.testPOST();
+       //s.testPOST();
        s.testREAD();
-       s.testREGISTER();
+       //s.testREGISTER();
 
     }
 
@@ -86,7 +85,7 @@ public class EncryptionTest {
         List<BigInteger> linkedAnnouncementIds = Arrays.asList(BigInteger.ONE);
         Instant timestamp = Instant.now();
         PublicKey idKey = this.getPublicKey(0);
-        String data = new String("Olá");
+        String data = "Olá";
 
         PostPayload postPayload = new PostPayload(data, idKey, Operation.POST, timestamp, linkedAnnouncementIds);
 
@@ -117,13 +116,14 @@ public class EncryptionTest {
         PublicKey idKey = this.getPublicKey(keyNumber);
         Operation o = Operation.READ;
 
-        ReadPayload readPayload = new ReadPayload(n, idKey, o, timestamp);
+        ReadPayload readPayload = new ReadPayload(n, idKey, idKey, o, timestamp);
         EncryptedPayload ep = readPayload.encrypt(this.publicKey, this.getPrivateKey(keyNumber));
         DecryptedPayload dp = ep.decrypt(this.privateKey);
         boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
 
     }
 
+/*
     public void testREGISTER() {
         int keyNumber = 5;
         Instant timestamp = Instant.now();
@@ -135,8 +135,7 @@ public class EncryptionTest {
         DecryptedPayload dp = ep.decrypt(this.privateKey);
         boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
     }
-
-
+*/
 
 
 

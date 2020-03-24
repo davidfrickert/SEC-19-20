@@ -26,7 +26,7 @@ public class Attacks {
         Thread serverThread = new Thread (s::listen);
         serverThread.start();
 
-        ClientExample c = new ClientExample();
+        ClientExample c = new ClientExample("test");
         String command = "post hello world";
         Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
 
