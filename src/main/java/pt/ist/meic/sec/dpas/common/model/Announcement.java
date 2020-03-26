@@ -26,7 +26,8 @@ public class Announcement implements Serializable {
     private String hash;
 
     private String message;
-    private final Instant creationTime = Instant.now();
+    private final Instant receivedTime = Instant.now();
+    private Instant sendTime;
 
     @Column(columnDefinition = "VARBINARY(4096)")
     private PublicKey creatorId;
@@ -36,18 +37,20 @@ public class Announcement implements Serializable {
     @Column(columnDefinition = "BIGINT")
     private List<BigInteger> referred;
 
-    public Announcement(String message, PublicKey creatorId, List<BigInteger> referred) {
+    public Announcement(String message, PublicKey creatorId, List<BigInteger> referred, Instant sendTime) {
         this.message = message;
         this.creatorId = creatorId;
         this.referred = referred;
         this.hash = calcHash();
+        this.sendTime = sendTime;
     }
 
-    public Announcement(String message, PublicKey creatorId) {
+    public Announcement(String message, PublicKey creatorId, Instant sendTime) {
         this.message = message;
         this.creatorId = creatorId;
         this.referred = new ArrayList<>();
         this.hash = calcHash();
+        this.sendTime = sendTime;
     }
 
     private Announcement() {}
@@ -72,8 +75,8 @@ public class Announcement implements Serializable {
         return message;
     }
 
-    public Instant getCreationTime() {
-        return creationTime;
+    public Instant getReceivedTime() {
+        return receivedTime;
     }
 
     public PublicKey getCreatorId() {
@@ -88,7 +91,7 @@ public class Announcement implements Serializable {
         return "Announcement{" +
                 "id=" + id +
                 ", message='" + message + '\'' +
-                ", creationTime=" + creationTime +
+                ", creationTime=" + receivedTime +
                 ", creatorId=" + creatorId.hashCode() +
                 ", referred=" + referred +
                 '}';
@@ -97,7 +100,7 @@ public class Announcement implements Serializable {
     private String calcHash() {
         try {
             MessageDigest d = MessageDigest.getInstance("SHA-512");
-            List<Object> fields = Arrays.asList(message, creationTime, creatorId, referred);
+            List<Object> fields = Arrays.asList(message, receivedTime, creatorId, referred);
             return Hex.encodeHexString(d.digest(ArrayUtils.objectToBytes(fields)));
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();

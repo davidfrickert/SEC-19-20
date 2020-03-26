@@ -10,9 +10,11 @@ import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
-import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -165,7 +167,7 @@ public class ClientLibrary {
             logger.info(a.getMessage());
             logger.info(a.getId());
             logger.info(a.getOwnerKey().hashCode());
-            logger.info(a.getCreationTime());
+            logger.info(a.getReceivedTime());
             logger.info(a.getReferred());
         }
 

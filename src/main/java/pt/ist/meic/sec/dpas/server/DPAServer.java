@@ -205,7 +205,7 @@ public class DPAServer {
         }
 
         private EncryptedPayloadReply handlePost(PostPayload p) {
-            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements());
+            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
             announcementDAO.persist(a);
             allBoards.get(p.getSenderKey()).appendAnnouncement(a);
             return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST, Instant.now(),
@@ -213,7 +213,7 @@ public class DPAServer {
         }
 
         private EncryptedPayloadReply handlePostGeneral(PostPayload p) {
-            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements());
+            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
             announcementDAO.persist(a);
             general.appendAnnouncement(a);
             return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST_GENERAL, Instant.now(),
