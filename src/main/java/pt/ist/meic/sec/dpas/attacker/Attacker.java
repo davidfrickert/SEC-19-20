@@ -50,7 +50,10 @@ public class Attacker {
         return response.getLeft();
     }
 
-    private DecryptedPayload replay(EncryptedPayload intercepted) {
-        return null;
+    private DecryptedPayload replay(EncryptedPayloadRequest intercepted) {
+        // attempt with a random operation because attacker can't figure out which operation this message is because it's
+        // encrypted..
+        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(intercepted, Operation.READ, privateKey);
+        return response.getLeft();
     }
 }
