@@ -43,6 +43,7 @@ public abstract class Board {
         System.out.println(allAnnouncements.stream().map(Announcement::asString).collect(Collectors.toList()));
         if (n == 0) return allAnnouncements;
         System.out.println("Retrieving " + n);
+        if (n > allAnnouncements.size()) return allAnnouncements;
         return allAnnouncements.subList(allAnnouncements.size() - n, allAnnouncements.size());
     }
 

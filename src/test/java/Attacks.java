@@ -41,10 +41,42 @@ public class Attacks {
         } catch (ClassCastException cce) {
             cce.printStackTrace();
         }
+    }
+
+    /**
+     * Replay server detection for a READ operation
+     *
+     * @throws IOException
+     */
+    public void replay() throws IOException {
+        DPAServer s = new DPAServer();
+        Thread serverThread = new Thread (s::listen);
+        serverThread.start();
+
+        ClientExample c = new ClientExample("test");
+        String command = "read 4 keys/public/clients/pub1.der";
+        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
+
+        EncryptedPayload sentEncrypted = sentAndReceived.getLeft();
+        EncryptedPayload receivedEncrypted = sentAndReceived.getRight();
+
+        Attacker attacker = new Attacker();
+        try {
+            // all replies can be casted to ACKPayload to view status message
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.REPLAY);
+            assertEquals(p.getStatus().getStatus(), Status.InvalidRequest);
+        } catch (ClassCastException cce) {
+            cce.printStackTrace();
+        }
+    }
+
+    public void drop () {
 
     }
 
-    public void drop() {
+    public void steal () {
 
     }
+
+
 }
