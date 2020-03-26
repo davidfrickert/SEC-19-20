@@ -6,18 +6,19 @@ import pt.ist.meic.sec.dpas.client.ClientExample;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRequest;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.io.IOException;
 
-import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.*;
 
 @Test
 public class Attacks {
 
     /**
-     * Man in the Middle server detection for a POST operation
+     * Man in the Middle server detection for a POST operation, with different private key from legitimate client
      *
      * @throws IOException
      */
@@ -44,11 +45,11 @@ public class Attacks {
     }
 
     /**
-     * Replay server detection for a READ operation
+     * Replay server detection for a READ operation, not using a private key
      *
      * @throws IOException
      */
-    public void replay() throws IOException {
+    public void replayREAD() throws IOException {
         DPAServer s = new DPAServer();
         Thread serverThread = new Thread (s::listen);
         serverThread.start();
@@ -62,21 +63,11 @@ public class Attacks {
 
         Attacker attacker = new Attacker();
         try {
-            // all replies can be casted to ACKPayload to view status message
-            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.REPLAY);
-            assertEquals(p.getStatus().getStatus(), Status.InvalidRequest);
-        } catch (ClassCastException cce) {
-            cce.printStackTrace();
+            AnnouncementsPayload p = (AnnouncementsPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.REPLAY_READ);
+            fail();
+        } catch (ClassCastException | NullPointerException e) {
+            System.out.println("Attacker: Unable to process payload.");
         }
     }
-
-    public void drop () {
-
-    }
-
-    public void steal () {
-
-    }
-
 
 }

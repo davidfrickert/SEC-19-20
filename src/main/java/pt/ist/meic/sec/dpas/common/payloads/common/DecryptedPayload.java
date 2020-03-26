@@ -41,7 +41,7 @@ public abstract class DecryptedPayload {
 
     public abstract EncryptedPayload encrypt(PublicKey receiverKey, PrivateKey senderKey);
 
-    public boolean verifySignature(EncryptedPayload e, PublicKey senderKey) {
+    public boolean verifySignature(EncryptedPayload e, PublicKey senderKey) throws IllegalStateException {
         return Crypto.verify(this.asBytes(), e.getSignature(), senderKey);
     }
 

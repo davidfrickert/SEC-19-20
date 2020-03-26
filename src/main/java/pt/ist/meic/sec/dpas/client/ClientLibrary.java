@@ -12,6 +12,7 @@ import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 
+import javax.crypto.BadPaddingException;
 import java.io.*;
 import java.math.BigInteger;
 import java.net.ConnectException;
@@ -158,15 +159,20 @@ public class ClientLibrary {
         EncryptedPayload receivedEncrypted = received.getRight();
         AnnouncementsPayload announcementsPayload = (AnnouncementsPayload) receivedDecrypted;
 
-        logger.info("Got " + announcementsPayload.getAnnouncements().size() + " announcements.");
+        try {
+            logger.info("Got " + announcementsPayload.getAnnouncements().size() + " announcements.");
 
-        for (Announcement a : announcementsPayload.getAnnouncements()) {
-            logger.info("----Announcement----");
-            logger.info(a.getMessage());
-            logger.info(a.getId());
-            logger.info(a.getOwnerKey().hashCode());
-            logger.info(a.getCreationTime());
-            logger.info(a.getReferred());
+            for (Announcement a : announcementsPayload.getAnnouncements()) {
+                logger.info("----Announcement----");
+                logger.info(a.getMessage());
+                logger.info(a.getId());
+                logger.info(a.getOwnerKey().hashCode());
+                logger.info(a.getCreationTime());
+                logger.info(a.getReferred());
+            }
+        }
+        catch (NullPointerException n) {
+            n.printStackTrace();
         }
 
         return Pair.of(sentEncrypted, receivedEncrypted);
@@ -254,7 +260,7 @@ public class ClientLibrary {
                 logger.info("Received " + o.name() + " Reply correctly!");
             }
             return Pair.of(dp, ep);
-        } catch (IOException | ClassNotFoundException exc) {
+        } catch (IOException | ClassNotFoundException | IllegalStateException | NullPointerException exc) {
             exc.printStackTrace();
         }
         return null;
