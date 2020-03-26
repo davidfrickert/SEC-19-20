@@ -100,7 +100,7 @@ public class Announcement implements Serializable {
     private String calcHash() {
         try {
             MessageDigest d = MessageDigest.getInstance("SHA-512");
-            List<Object> fields = Arrays.asList(message, receivedTime, creatorId, referred);
+            List<Object> fields = Arrays.asList(message, sendTime, creatorId, referred);
             return Hex.encodeHexString(d.digest(ArrayUtils.objectToBytes(fields)));
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
