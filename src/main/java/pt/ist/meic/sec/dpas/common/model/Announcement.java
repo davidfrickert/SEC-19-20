@@ -1,13 +1,17 @@
 package pt.ist.meic.sec.dpas.common.model;
 
+import org.apache.commons.codec.binary.Hex;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Entity
@@ -17,6 +21,9 @@ public class Announcement implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(columnDefinition = "BIGINT")
     private BigInteger id;
+
+    @Column(unique = true)
+    private String hash;
 
     private String message;
     private final Instant creationTime = Instant.now();
@@ -33,12 +40,14 @@ public class Announcement implements Serializable {
         this.message = message;
         this.creatorId = creatorId;
         this.referred = referred;
+        this.hash = calcHash();
     }
 
     public Announcement(String message, PublicKey creatorId) {
         this.message = message;
         this.creatorId = creatorId;
         this.referred = new ArrayList<>();
+        this.hash = calcHash();
     }
 
     private Announcement() {}
@@ -83,5 +92,16 @@ public class Announcement implements Serializable {
                 ", creatorId=" + creatorId.hashCode() +
                 ", referred=" + referred +
                 '}';
+    }
+
+    private String calcHash() {
+        try {
+            MessageDigest d = MessageDigest.getInstance("SHA-512");
+            List<Object> fields = Arrays.asList(message, creationTime, creatorId, referred);
+            return Hex.encodeHexString(d.digest(ArrayUtils.objectToBytes(fields)));
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
+        }
     }
 }

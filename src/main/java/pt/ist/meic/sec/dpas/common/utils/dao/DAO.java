@@ -94,9 +94,22 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
         transaction = session.beginTransaction();
     }
 
-    public void commitAndClose() {
+    protected void commitAndClose() {
         transaction.commit();
         session.close();
+    }
+
+    protected void rollbackAndClose() {
+        transaction.rollback();
+        session.close();
+    }
+
+    public Session getCurrentSession() {
+        return this.session;
+    }
+
+    public Class<T> getType() {
+        return type;
     }
 
     private void closeSession() {
