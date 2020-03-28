@@ -160,15 +160,20 @@ public class ClientLibrary {
         EncryptedPayload receivedEncrypted = received.getRight();
         AnnouncementsPayload announcementsPayload = (AnnouncementsPayload) receivedDecrypted;
 
-        logger.info("Got " + announcementsPayload.getAnnouncements().size() + " announcements.");
+        try {
+            logger.info("Got " + announcementsPayload.getAnnouncements().size() + " announcements.");
 
-        for (Announcement a : announcementsPayload.getAnnouncements()) {
-            logger.info("----Announcement----");
-            logger.info(a.getMessage());
-            logger.info(a.getId());
-            logger.info(a.getOwnerKey().hashCode());
-            logger.info(a.getReceivedTime());
-            logger.info(a.getReferred());
+            for (Announcement a : announcementsPayload.getAnnouncements()) {
+                logger.info("----Announcement----");
+                logger.info(a.getMessage());
+                logger.info(a.getId());
+                logger.info(a.getOwnerKey().hashCode());
+                logger.info(a.getReceivedTime());
+                logger.info(a.getReferred());
+            }
+        }
+        catch (NullPointerException n) {
+            n.printStackTrace();
         }
 
         return Pair.of(sentEncrypted, receivedEncrypted);
@@ -256,7 +261,7 @@ public class ClientLibrary {
                 logger.info("Received " + o.name() + " Reply correctly!");
             }
             return Pair.of(dp, ep);
-        } catch (IOException | ClassNotFoundException exc) {
+        } catch (IOException | ClassNotFoundException | IllegalStateException | NullPointerException exc) {
             exc.printStackTrace();
         }
         return null;

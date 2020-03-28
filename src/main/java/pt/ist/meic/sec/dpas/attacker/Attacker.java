@@ -36,7 +36,7 @@ public class Attacker {
     public DecryptedPayload sendInterceptedRequestPayload(EncryptedPayloadRequest intercepted, AttackType type) {
         return switch (type) {
             case MITM -> mitm(intercepted);
-            case REPLAY -> replay(intercepted);
+            case REPLAY_READ -> replayRead(intercepted);
         };
     }
 
@@ -50,10 +50,10 @@ public class Attacker {
         return response.getLeft();
     }
 
-    private DecryptedPayload replay(EncryptedPayloadRequest intercepted) {
-        // attempt with a random operation because attacker can't figure out which operation this message is because it's
-        // encrypted..
-        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(intercepted, Operation.READ, privateKey);
+    private DecryptedPayload replayRead(EncryptedPayloadRequest intercepted) {
+            // attacker is preying on READ operations, sends payload with no private key
+        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(intercepted, Operation.READ, null);
         return response.getLeft();
     }
+
 }

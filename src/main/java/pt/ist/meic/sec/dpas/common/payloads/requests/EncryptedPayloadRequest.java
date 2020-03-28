@@ -19,7 +19,7 @@ public class EncryptedPayloadRequest extends EncryptedPayload {
     }
 
     @Override
-    public DecryptedPayload decrypt(PrivateKey receiverKey) {
+    public DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException {
 
         Operation op = Operation.fromBytes(Crypto.decryptBytes(this.getOperation(), receiverKey));
         Instant timestamp = Instant.parse(new String(Crypto.decryptBytes(this.getTimestamp(), receiverKey)));
