@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class DPAServer {
@@ -85,6 +86,11 @@ public class DPAServer {
     private void initBoards() {
         initUserBoards();
         initGeneralBoard();
+    }
+
+    private Optional<UserBoard> getUserBoard(PublicKey pk) {
+        UserBoard ub = this.allBoards.get(pk);
+        return Optional.ofNullable(ub);
     }
 
     private void initUserBoards() {
@@ -191,16 +197,21 @@ public class DPAServer {
 
         private EncryptedPayloadReply handlePost(PostPayload p) {
             Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
-            boolean success = announcementDAO.safeInsert(a);
+            Optional<UserBoard> optUB = getUserBoard(p.getSenderKey());
+            boolean success;
             StatusMessage status;
-            if (success) {
-                success = allBoards.get(p.getSenderKey()).appendAnnouncement(a);
 
-                if (success) status = new StatusMessage(Status.Success);
-                else status = new StatusMessage(Status.InvalidRequest, "Attempt to write on wrong board.");
-
-            }
-            else status = new StatusMessage(Status.InvalidRequest, "This announcement already exists.");
+            if (optUB.isPresent()) {
+                UserBoard ub = optUB.get();
+                if (ub.announcementCanBePosted(a)) {
+                    success = announcementDAO.safeInsert(a);
+                    if (success) {
+                        ub.appendAnnouncement(a);
+                        status = new StatusMessage(Status.Success);
+                    }
+                    else status = new StatusMessage(Status.InvalidRequest, "Announcement already exists.");
+                } else status = new StatusMessage(Status.InvalidRequest, "Attempt to write on wrong board.");
+            } else status = new StatusMessage(Status.NotFound, "Board for this user not found. Forgot to register?");
 
             return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST, Instant.now(), status)
                     .encrypt(p.getSenderKey(), DPAServer.this.keyPair.getPrivate());
@@ -222,17 +233,18 @@ public class DPAServer {
         private EncryptedPayloadReply handleRead(ReadPayload p) {
             logger.info("User " + p.getSenderKey().hashCode() + " attempted to read User " + p.getBoardToReadFrom().hashCode() + " board!");
             PublicKey boardKey = p.getBoardToReadFrom();
-            UserBoard board = allBoards.get(boardKey);
+            Optional<UserBoard> optUB = getUserBoard(boardKey);
             StatusMessage statusMessage;
             List<Announcement> announcements = new ArrayList<>();
-            if (board == null) {
+            if (optUB.isEmpty()) {
                 statusMessage = new StatusMessage(Status.NotFound, "The board associated with this key doesn't exist.");
             } else {
+                UserBoard board = optUB.get();
                 try {
                     announcements = board.getNAnnouncements(p);
                     statusMessage = new StatusMessage(Status.Success);
                 } catch (IllegalArgumentException e) {
-                    statusMessage = new StatusMessage(Status.InvalidRequest);
+                    statusMessage = new StatusMessage(Status.InvalidRequest, "Attempt to read wrong user board.");
                 }
             }
             return new AnnouncementsPayload(DPAServer.this.keyPair.getPublic(), Operation.READ, Instant.now(),

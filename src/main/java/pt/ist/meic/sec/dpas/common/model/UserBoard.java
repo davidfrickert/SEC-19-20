@@ -22,9 +22,13 @@ public class UserBoard extends Board {
     private UserBoard() {}
 
     public boolean appendAnnouncement(Announcement a) {
-        if (! a.getOwnerKey().equals(this.owner)) return false;
+        if (! announcementCanBePosted(a)) return false;
         super.appendAnnouncement(a);
         return true;
+    }
+
+    public boolean announcementCanBePosted(Announcement a) {
+        return a.getOwnerKey().equals(this.owner);
     }
 
     public PublicKey getOwner() {
