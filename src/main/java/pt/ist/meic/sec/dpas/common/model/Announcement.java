@@ -107,4 +107,8 @@ public class Announcement implements Serializable {
             throw new RuntimeException();
         }
     }
+
+    public String getHash() {
+        return this.hash;
+    }
 }

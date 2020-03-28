@@ -1,5 +1,6 @@
 package pt.ist.meic.sec.dpas.common.model;
 
+import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 
 import javax.persistence.*;
@@ -32,12 +33,14 @@ public abstract class Board {
         this.announcements = announcements;
     }
 
-    public void appendAnnouncement(Announcement a) {
+    public boolean appendAnnouncement(Announcement a) {
         this.announcements.put(a.getId(), a);
         dao.update(this);
+        return true;
     }
 
-    public List<Announcement> getNAnnouncements(int n) {
+    public List<Announcement> getNAnnouncements(ReadPayload r) {
+        int n = r.getData().intValue();
         List<Announcement> allAnnouncements = getAnnouncements();
         System.out.println("Retrieving...");
         System.out.println(allAnnouncements.stream().map(Announcement::asString).collect(Collectors.toList()));
