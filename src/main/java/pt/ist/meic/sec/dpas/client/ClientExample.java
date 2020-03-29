@@ -148,7 +148,7 @@ public class ClientExample {
      * @return Pair<DecryptedPayload, EncryptedPayload> Encrypted and Decrypted payload that server sent.
      */
 
-    private Pair<DecryptedPayload, EncryptedPayload> getResponse() throws SocketTimeoutException {
+    public Pair<DecryptedPayload, EncryptedPayload> getResponse() throws SocketTimeoutException {
         return library.receiveReply(this.keyPair.getPrivate());
     }
 
