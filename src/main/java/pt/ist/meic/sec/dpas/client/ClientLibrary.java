@@ -3,10 +3,8 @@ package pt.ist.meic.sec.dpas.client;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
-import pt.ist.meic.sec.dpas.common.model.Announcement;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
@@ -19,6 +17,7 @@ import java.math.BigInteger;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
@@ -62,6 +61,7 @@ public class ClientLibrary {
         while (!connected) {
             try {
                 clientSocket = new Socket(ip, port);
+                clientSocket.setSoTimeout(15000);
                 connected = true;
                 out = new ObjectOutputStream(clientSocket.getOutputStream());
                 in = new ObjectInputStream(clientSocket.getInputStream());
@@ -79,7 +79,7 @@ public class ClientLibrary {
         }
     }
 
-    private void write(EncryptedPayload e) {
+    public void write(EncryptedPayload e) {
         boolean done = false;
         int attempts = 0;
         while (!done && attempts < 10) {
@@ -102,53 +102,36 @@ public class ClientLibrary {
         clientSocket.close();
     }
 
-    public Pair<EncryptedPayload, EncryptedPayload> register(String username, PublicKey key, PrivateKey privateKey) {
+    public EncryptedPayload register(String username, PublicKey key, PrivateKey privateKey) {
         Operation op = Operation.REGISTER;
-        EncryptedPayload sentEncrypted = registerSend(username, key, privateKey);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, privateKey);
-        DecryptedPayload receivedDecrypted = received.getLeft();
-        EncryptedPayload receivedEncrypted = received.getRight();
-        return Pair.of(sentEncrypted, receivedEncrypted);
+        EncryptedPayload sentEncrypted = createEncryptedRegisterPayload(username, key, privateKey);
+        write(sentEncrypted);
+        return sentEncrypted;
     }
 
-    /**
-     *
-     * @param username String representing the username
-     * @param key Public key of the user
-     * @param privateKey Private key of the user
-     * @return Payload of register action encrypted
-     */
-    public EncryptedPayload registerSend(String username, PublicKey key, PrivateKey privateKey) {
-        logger.info("Attempting REGISTER");
-        Instant time = Instant.now();
-        Operation op = Operation.REGISTER;
-        return new RegisterPayload(username, key, op, time).encrypt(serverKey, privateKey);
-    }
-
-    public Pair<EncryptedPayload, EncryptedPayload> post(PublicKey authKey, String message, List<BigInteger> announcements, PrivateKey signKey) {
+    public EncryptedPayload post(PublicKey authKey, String message, List<BigInteger> announcements, PrivateKey signKey) {
         Operation op = Operation.POST;
         EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
-        DecryptedPayload receivedDecrypted = received.getLeft();
-        EncryptedPayload receivedEncrypted = received.getRight();
-        return Pair.of(sentEncrypted, receivedEncrypted);
+        write(sentEncrypted);
+        return sentEncrypted;
     }
 
-    public Pair<EncryptedPayload, EncryptedPayload> postGeneral(PublicKey authKey, String message, List<BigInteger> announcements, PrivateKey signKey) {
+    public EncryptedPayload postGeneral(PublicKey authKey, String message, List<BigInteger> announcements, PrivateKey signKey) {
         Operation op = Operation.POST_GENERAL;
         EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
-        DecryptedPayload receivedDecrypted = received.getLeft();
-        EncryptedPayload receivedEncrypted = received.getRight();
-        return Pair.of(sentEncrypted, receivedEncrypted);
+        write(sentEncrypted);
+        return sentEncrypted;
     }
 
 
-    public Pair<EncryptedPayload, EncryptedPayload> read(PublicKey authKey, PublicKey boardKey, BigInteger numberToRead, PrivateKey signKey) {
+    public EncryptedPayload read(PublicKey authKey, PublicKey boardKey, BigInteger numberToRead, PrivateKey signKey) {
         Operation op = Operation.READ;
 
         EncryptedPayload sentEncrypted = createEncryptedReadPayload(authKey, boardKey, numberToRead, signKey, op);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
+        write(sentEncrypted);
+        return sentEncrypted;
+        /*
+        Pair<DecryptedPayload, EncryptedPayload> received = receiveReply(sentEncrypted, op, signKey);
         DecryptedPayload receivedDecrypted = received.getLeft();
         EncryptedPayload receivedEncrypted = received.getRight();
         AnnouncementsPayload announcementsPayload = (AnnouncementsPayload) receivedDecrypted;
@@ -170,13 +153,18 @@ public class ClientLibrary {
         }
 
         return Pair.of(sentEncrypted, receivedEncrypted);
+
+         */
     }
 
-    public Pair<EncryptedPayload, EncryptedPayload> readGeneral(BigInteger number, PublicKey authKey, PrivateKey signKey) {
+    public EncryptedPayload readGeneral(BigInteger number, PublicKey authKey, PrivateKey signKey) {
         Operation op = Operation.READ_GENERAL;
 
         EncryptedPayload sentEncrypted = createEncryptedReadPayload(authKey, null, number, signKey, op);
-        Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
+        write(sentEncrypted);
+        return sentEncrypted;
+        /*
+        Pair<DecryptedPayload, EncryptedPayload> received = receiveReply(sentEncrypted, op, signKey);
         DecryptedPayload receivedDecrypted = received.getLeft();
 
         EncryptedPayload receivedEncrypted = received.getRight();
@@ -201,6 +189,8 @@ public class ClientLibrary {
 
 
         return Pair.of(sentEncrypted, receivedEncrypted);
+
+         */
     }
 
     /**
@@ -261,20 +251,19 @@ public class ClientLibrary {
         return r.encrypt(serverKey, signKey);
     }
 
-    public Pair<DecryptedPayload, EncryptedPayload> sendPayloadToServer(EncryptedPayload e, Operation o
-            , PrivateKey senderPrivateKey) {
-        write(e);
-
+    public Pair<DecryptedPayload, EncryptedPayload> receiveReply(PrivateKey senderPrivateKey) throws SocketTimeoutException {
         try {
             EncryptedPayload ep = (EncryptedPayload) in.readObject();
             DecryptedPayload dp = ep.decrypt(senderPrivateKey);
             boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
             if (! correctSignature) {
-                logger.warn("Received " + o.name() + " Reply with bad signature");
+                logger.warn("Received reply with bad signature");
             } else {
-                logger.info("Received " + o.name() + " Reply correctly!");
+                logger.info("Received reply correctly!");
             }
             return Pair.of(dp, ep);
+        } catch (SocketTimeoutException ste) {
+            throw ste;
         } catch (IOException | ClassNotFoundException | IllegalStateException | NullPointerException exc) {
             exc.printStackTrace();
         }

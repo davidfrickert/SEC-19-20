@@ -200,6 +200,7 @@ public class DPAServer {
         }
 
         private EncryptedPayloadReply handlePost(PostPayload p) {
+            System.out.println(p.getTimestamp());
             Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
             Optional<UserBoard> optUB = getUserBoard(p.getSenderKey());
             boolean success;

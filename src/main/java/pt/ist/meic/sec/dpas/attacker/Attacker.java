@@ -12,6 +12,7 @@ import pt.ist.meic.sec.dpas.server.DPAServer;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -60,19 +61,29 @@ public class Attacker {
         library.start(host.getHostName(), DPAServer.getPort());
     }
 
-    public DecryptedPayload sendInterceptedRequestPayload(EncryptedPayloadRequest intercepted, AttackType type, Operation operation) {
+    public DecryptedPayload sendInterceptedRequestPayload(EncryptedPayloadRequest intercepted, AttackType type, Operation operation) throws SocketTimeoutException {
         return switch (type) {
             case MITM -> mitm(intercepted, operation);
+            case REPLAY -> replay(intercepted, operation);
         };
     }
 
-    private DecryptedPayload mitm(EncryptedPayloadRequest intercepted, Operation operation) {
+    private DecryptedPayload mitm(EncryptedPayloadRequest intercepted, Operation operation) throws SocketTimeoutException {
         // PublicKey auth, byte[] operation, byte[] timestamp, byte[] signature, byte[] message, byte[] linkedAnnouncements
         EncryptedPayload modifiedByAttacker = new EncryptedPayloadRequest(this.serverKey, intercepted.getOperation(),
                 intercepted.getTimestamp(), intercepted.getSignature(), intercepted.getMessage());
         // attempt with a random operation because attacker can't figure out which operation this message is because it's
         // encrypted..
-        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(modifiedByAttacker, operation, privateKey);
+        library.write(modifiedByAttacker);
+        Pair<DecryptedPayload, EncryptedPayload> response = library.receiveReply(privateKey);
         return response.getLeft();
     }
+
+    private DecryptedPayload replay(EncryptedPayloadRequest intercepted, Operation operation) throws SocketTimeoutException {
+        // edited - this should encrypt with the attacker's key, can't have null encryption key.
+        library.write(intercepted);
+        Pair<DecryptedPayload, EncryptedPayload> response = library.receiveReply(privateKey);
+        return response.getLeft();
+    }
+
 }

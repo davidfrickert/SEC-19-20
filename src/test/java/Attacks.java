@@ -1,4 +1,3 @@
-import org.apache.commons.lang3.tuple.Pair;
 import org.testng.annotations.Test;
 import pt.ist.meic.sec.dpas.attacker.AttackType;
 import pt.ist.meic.sec.dpas.attacker.Attacker;
@@ -12,8 +11,10 @@ import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRequest;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 @Test
 public class Attacks {
@@ -35,9 +36,8 @@ public class Attacks {
     public void MITM_Post() throws IOException {
 
         String command = "post hello world";
-        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
-
-        EncryptedPayload sentEncrypted = sentAndReceived.getLeft();
+        EncryptedPayload sentEncrypted = c.doAction(command);
+        c.getEncryptedResponse();
 
         Attacker attacker = new Attacker();
         try {
@@ -52,9 +52,8 @@ public class Attacks {
     public void MITM_PostGeneral() throws IOException {
 
         String command = "post hello world";
-        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
-
-        EncryptedPayload sentEncrypted = sentAndReceived.getLeft();
+        EncryptedPayload sentEncrypted = c.doAction(command);
+        c.getEncryptedResponse();
 
         Attacker attacker = new Attacker();
         try {
@@ -68,9 +67,8 @@ public class Attacks {
     public void MITM_Read() throws IOException {
 
         String command = "read 0";
-        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
-
-        EncryptedPayload sentEncrypted = sentAndReceived.getLeft();
+        EncryptedPayload sentEncrypted = c.doAction(command);
+        c.getEncryptedResponse();
 
         Attacker attacker = new Attacker();
         try {
@@ -81,12 +79,12 @@ public class Attacks {
             cce.printStackTrace();
         }
     }
+
     public void MITM_ReadGeneral() throws IOException {
 
         String command = "read 0";
-        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
-
-        EncryptedPayload sentEncrypted = sentAndReceived.getLeft();
+        EncryptedPayload sentEncrypted = c.doAction(command);
+        c.getEncryptedResponse();
 
         Attacker attacker = new Attacker();
         try {
@@ -101,18 +99,53 @@ public class Attacks {
     public void MITM_Register() throws IOException {
 
         String command = "register";
-        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
-
-        EncryptedPayload sentEncrypted = sentAndReceived.getLeft();
-        EncryptedPayload receivedEncrypted = sentAndReceived.getRight();
+        EncryptedPayload sentEncrypted = c.doAction(command);
+        c.getEncryptedResponse();
 
         Attacker attacker = new Attacker();
         try {
             // all replies can be casted to ACKPayload to view status message
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
             assertEquals(p.getStatus().getStatus(), Status.InvalidRequest);
+
         } catch (ClassCastException cce) {
             cce.printStackTrace();
         }
     }
+
+    /**
+     * Replay server detection for a READ operation, not using a private key
+     *
+     * @throws IOException
+     */
+    public void replayREAD() throws IOException {
+
+        String command = "read 4";
+        EncryptedPayload sentEncrypted = c.doAction(command);
+        c.getEncryptedResponse();
+
+        Attacker attacker = new Attacker();
+        try {
+            AnnouncementsPayload p = (AnnouncementsPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.REPLAY, Operation.READ);
+            fail();
+        } catch (ClassCastException | NullPointerException e) {
+            System.out.println("Attacker: Unable to process payload.");
+        }
+    }
+
+    @Test(expectedExceptions = SocketTimeoutException.class)
+    public void reject() throws SocketTimeoutException {
+        String command = "post attempt";
+        EncryptedPayload sent = c.doAction(command);
+
+        try {
+            c.getEncryptedResponse();
+        } catch (SocketTimeoutException e) {
+            e.printStackTrace();
+        }
+
+        c.getEncryptedResponse();
+
+    }
+
 }

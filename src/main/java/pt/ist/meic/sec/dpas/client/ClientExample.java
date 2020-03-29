@@ -2,6 +2,7 @@ package pt.ist.meic.sec.dpas.client;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
+import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.security.*;
 import java.security.cert.Certificate;
@@ -79,16 +81,40 @@ public class ClientExample {
                     System.exit(0);
                 }
             }
-            doAction(line);
-
+            // sends sentPayload
+            EncryptedPayload sentPayload = doAction(line);
+            Pair<DecryptedPayload, EncryptedPayload> response = getResponseOrRetry(sentPayload);
+            if (response == null) {
+                System.out.println("Failure sending this request");
+            }
             System.out.print(">>");
         }
     }
 
-    public Pair<EncryptedPayload, EncryptedPayload> doAction(String command) {
+    private Pair<DecryptedPayload, EncryptedPayload> getResponseOrRetry(EncryptedPayload e) {
+        int max_attempts = 10, attempts = 0;
+        while (attempts < max_attempts) {
+            try {
+                return getResponse();
+            } catch (SocketTimeoutException ste) {
+                attempts++;
+                System.out.println("Failure... Retrying. Retry Count: " + attempts);
+                library.write(e);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+        System.out.println("Max Retries reached (" + max_attempts + ").");
+        return null;
+    }
+
+    public EncryptedPayload doAction(String command) {
         String[] data = command.split(" ");
         String action = data[0];
-        return switch (action.toLowerCase()) {
+        EncryptedPayload sentPayload = switch (action.toLowerCase()) {
             case "register" -> library.register(username, keyPair.getPublic(), keyPair.getPrivate());
             case "post" -> {
                 String announcement = getAnnouncement(data);
@@ -114,7 +140,22 @@ public class ClientExample {
                 yield null;
             }
         };
+        return sentPayload;
     }
+
+    /**
+     * This method will listen for server answer to the client's requests
+     * @return Pair<DecryptedPayload, EncryptedPayload> Encrypted and Decrypted payload that server sent.
+     */
+
+    private Pair<DecryptedPayload, EncryptedPayload> getResponse() throws SocketTimeoutException {
+        return library.receiveReply(this.keyPair.getPrivate());
+    }
+
+    public EncryptedPayload getEncryptedResponse() throws SocketTimeoutException {
+        return getResponse().getRight();
+    }
+
 
     public static void main(String[] args) throws IOException {
 
@@ -162,4 +203,7 @@ public class ClientExample {
         return result;
     }
 
+    public ClientLibrary getLibrary() {
+        return library;
+    }
 }
