@@ -19,16 +19,17 @@ import java.math.BigInteger;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.security.*;
-import java.security.cert.Certificate;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.List;
 
 public class ClientLibrary {
     private final static Logger logger = Logger.getLogger(ClientLibrary.class);
-    private static final String KEYSTORE_PATH = "myClient.keyStore";
-    private static final String CERT_ALIAS = "myServer";
+    private static final String SERVER_CERT = "keys/public/server/pub-server1.crt";
 
 
     private Socket clientSocket;
@@ -45,21 +46,13 @@ public class ClientLibrary {
         connect();
 
         try{
-            FileInputStream is = new FileInputStream(KEYSTORE_PATH);
+            FileInputStream is = new FileInputStream(SERVER_CERT);
 
-            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-            keystore.load(is, "client".toCharArray());
-            // Get certificate of server public key
-            Certificate cert = keystore.getCertificate(CERT_ALIAS);
+            CertificateFactory f = CertificateFactory.getInstance("X.509");
+            X509Certificate cert = (X509Certificate) f.generateCertificate(is);
             serverKey = cert.getPublicKey();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
+        } catch (IOException | CertificateException e) {
+            throw new IllegalStateException(e);
         }
     }
 
@@ -185,7 +178,28 @@ public class ClientLibrary {
         EncryptedPayload sentEncrypted = createEncryptedReadPayload(authKey, null, number, signKey, op);
         Pair<DecryptedPayload, EncryptedPayload> received = sendPayloadToServer(sentEncrypted, op, signKey);
         DecryptedPayload receivedDecrypted = received.getLeft();
+
         EncryptedPayload receivedEncrypted = received.getRight();
+
+        AnnouncementsPayload announcementsPayload = (AnnouncementsPayload) receivedDecrypted;
+
+        try {
+            logger.info("Got " + announcementsPayload.getAnnouncements().size() + " announcements.");
+
+            for (Announcement a : announcementsPayload.getAnnouncements()) {
+                logger.info("----Announcement----");
+                logger.info(a.getMessage());
+                logger.info(a.getId());
+                logger.info(a.getOwnerKey().hashCode());
+                logger.info(a.getReceivedTime());
+                logger.info(a.getReferred());
+            }
+        }
+        catch (NullPointerException n) {
+            n.printStackTrace();
+        }
+
+
         return Pair.of(sentEncrypted, receivedEncrypted);
     }
 

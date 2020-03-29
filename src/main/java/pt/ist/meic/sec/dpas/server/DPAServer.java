@@ -35,8 +35,8 @@ import java.util.stream.Collectors;
 
 public class DPAServer {
     private final static Logger logger = Logger.getLogger(DPAServer.class);
-    private static final String KEYSTORE_PATH = "myServer.keyStore";
-    private static final String KEYSTORE_ALIAS = "myServer";
+    private static final String KEYSTORE_PATH = "keys/private/server/keystore1.p12";
+    private static final String KEYSTORE_ALIAS = "server1";
 
     private Map<PublicKey, UserBoard> allBoards;
     private Board general;
@@ -55,7 +55,7 @@ public class DPAServer {
         try{
             FileInputStream is = new FileInputStream(KEYSTORE_PATH);
 
-            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+            KeyStore keystore = KeyStore.getInstance("PKCS12");
             keystore.load(is, "server".toCharArray());
 
             Key key = keystore.getKey(KEYSTORE_ALIAS, "server".toCharArray());

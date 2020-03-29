@@ -26,7 +26,7 @@ public class Attacks {
         serverThread.start();
     }
 
-    ClientExample c = new ClientExample("test");
+    ClientExample c = new ClientExample("test", "keys/private/clients/2.p12", "client2");
 
     /**
      * Man in the Middle server detection for a POST operation, with different private key from legitimate client
@@ -123,11 +123,7 @@ public class Attacks {
      * @throws IOException
      */
     public void replayREAD() throws IOException {
-        DPAServer s = new DPAServer();
-        Thread serverThread = new Thread (s::listen);
-        serverThread.start();
 
-        ClientExample c = new ClientExample("test");
         String command = "read 4";
         Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
 

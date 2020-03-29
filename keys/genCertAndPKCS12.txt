@@ -1,0 +1,2 @@
+openssl req -new -x509 -sha512 -newkey rsa:4096 -keyout key1.pem -out pub1.crt 
+openssl pkcs12 -export -inkey key.pem -in req.crt -name user1 -out keystore1.p12

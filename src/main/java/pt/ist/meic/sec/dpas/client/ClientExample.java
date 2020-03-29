@@ -20,8 +20,7 @@ import java.util.Scanner;
 
 public class ClientExample {
     private final static Logger logger = Logger.getLogger(ClientExample.class);
-    private static final String KEYSTORE_PATH = "myClient.keyStore";
-    private static final String KEYSTORE_ALIAS = "myClient";
+    private static final String KEYSTORE_ALIAS = "client";
 
     private KeyPair keyPair;
 
@@ -29,17 +28,17 @@ public class ClientExample {
 
     private String username;
 
-    public ClientExample(String username) {
+    public ClientExample(String username, String keyPath, String keyStorePassword) {
 
         this.username = username;
 
         try{
-            FileInputStream is = new FileInputStream(KEYSTORE_PATH);
+            FileInputStream is = new FileInputStream(keyPath);
 
-            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-            keystore.load(is, "client".toCharArray());
+            KeyStore keystore = KeyStore.getInstance("PKCS12");
+            keystore.load(is, keyStorePassword.toCharArray());
 
-            Key key = keystore.getKey(KEYSTORE_ALIAS, "client".toCharArray());
+            Key key = keystore.getKey(KEYSTORE_ALIAS, keyStorePassword.toCharArray());
             if (key instanceof PrivateKey) {
                 // Get certificate of public key
                 Certificate cert = keystore.getCertificate(KEYSTORE_ALIAS);
@@ -120,14 +119,16 @@ public class ClientExample {
     public static void main(String[] args) throws IOException {
 
         //program must be initialized with a username
-        String username;
-        if(args.length != 1){
+        String username, keyStorePath, ksPassword;
+        if(args.length != 3){
             System.out.println("ERROR: Wrong number of parameters.");
-            System.out.println("Correct usage: java ClientExample <username>");
+            System.out.println("Correct usage: java ClientExample <username> <keyStore path> <keyStore password>");
             System.exit(-1);
         } else {
             username = args[0];
-            ClientExample c = new ClientExample(username);
+            keyStorePath = args[1];
+            ksPassword = args[2];
+            ClientExample c = new ClientExample(username, keyStorePath, ksPassword);
             c.input(System.in);
         }
     }

@@ -47,7 +47,7 @@ public abstract class Board {
         if (n == 0) return allAnnouncements;
         System.out.println("Retrieving " + n);
         if (n > allAnnouncements.size()) return allAnnouncements;
-        return allAnnouncements.subList(allAnnouncements.size() - n, allAnnouncements.size());
+        return new ArrayList<>(allAnnouncements.subList(allAnnouncements.size() - n, allAnnouncements.size()));
     }
 
     public Optional<Announcement> getById(BigInteger Id) {

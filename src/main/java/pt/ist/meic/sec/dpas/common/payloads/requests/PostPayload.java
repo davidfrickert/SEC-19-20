@@ -60,7 +60,7 @@ public class PostPayload extends DecryptedPayload {
         return "PostPayload{" +
                 "announcement='" + announcement + '\'' +
                 ", linkedAnnouncements=" + linkedAnnouncements +
-                ", senderKey=" + getSenderKey().hashCode() +
+                ", senderKey=" + (getSenderKey() != null ? getSenderKey().hashCode() : null) +
                 ", operation=" + getOperation() +
                 ", timestamp=" + getTimestamp() +
                 '}';
