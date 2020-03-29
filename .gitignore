@@ -1,3 +1,8 @@
 ./keys/private
 ./keys/public
 ./target
+keys/private
+keys/public
+target
+*.log
+*.log.*

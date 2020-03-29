@@ -156,6 +156,10 @@ public class ClientExample {
         return getResponse().getRight();
     }
 
+    public PublicKey getPublicKey() {
+        return keyPair.getPublic();
+    }
+
 
     public static void main(String[] args) throws IOException {
 
