@@ -63,7 +63,6 @@ public class Attacker {
     public DecryptedPayload sendInterceptedRequestPayload(EncryptedPayloadRequest intercepted, AttackType type, Operation operation) {
         return switch (type) {
             case MITM -> mitm(intercepted, operation);
-            case REPLAY -> replay(intercepted, operation);
         };
     }
 
@@ -76,11 +75,4 @@ public class Attacker {
         Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(modifiedByAttacker, operation, privateKey);
         return response.getLeft();
     }
-
-    private DecryptedPayload replay(EncryptedPayloadRequest intercepted, Operation operation) {
-        // edited - this should encrypt with the attacker's key, can't have null encryption key.
-        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(intercepted, operation, privateKey);
-        return response.getLeft();
-    }
-
 }

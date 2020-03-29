@@ -14,7 +14,6 @@ import pt.ist.meic.sec.dpas.server.DPAServer;
 import java.io.IOException;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
 
 @Test
 public class Attacks {
@@ -116,28 +115,4 @@ public class Attacks {
             cce.printStackTrace();
         }
     }
-
-    /**
-     * Replay server detection for a READ operation, not using a private key
-     *
-     * @throws IOException
-     */
-    public void replayREAD() throws IOException {
-
-        String command = "read 4";
-        Pair<EncryptedPayload, EncryptedPayload> sentAndReceived = c.doAction(command);
-
-        EncryptedPayload sentEncrypted = sentAndReceived.getLeft();
-        EncryptedPayload receivedEncrypted = sentAndReceived.getRight();
-
-        Attacker attacker = new Attacker();
-        try {
-            AnnouncementsPayload p = (AnnouncementsPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.REPLAY, Operation.READ);
-            fail();
-        } catch (ClassCastException | NullPointerException e) {
-            System.out.println("Attacker: Unable to process payload.");
-        }
-    }
-
-
 }
