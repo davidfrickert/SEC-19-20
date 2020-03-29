@@ -33,26 +33,26 @@ public class Attacker {
         library.start(host.getHostName(), DPAServer.getPort());
     }
 
-    public DecryptedPayload sendInterceptedRequestPayload(EncryptedPayloadRequest intercepted, AttackType type) {
+    public DecryptedPayload sendInterceptedRequestPayload(EncryptedPayloadRequest intercepted, AttackType type, Operation operation) {
         return switch (type) {
-            case MITM -> mitm(intercepted);
-            case REPLAY_READ -> replayRead(intercepted);
+            case MITM -> mitm(intercepted, operation);
+            case REPLAY -> replay(intercepted, operation);
         };
     }
 
-    private DecryptedPayload mitm(EncryptedPayloadRequest intercepted) {
+    private DecryptedPayload mitm(EncryptedPayloadRequest intercepted, Operation operation) {
         // PublicKey auth, byte[] operation, byte[] timestamp, byte[] signature, byte[] message, byte[] linkedAnnouncements
         EncryptedPayload modifiedByAttacker = new EncryptedPayloadRequest(this.publicKey, intercepted.getOperation(),
                 intercepted.getTimestamp(), intercepted.getSignature(), intercepted.getMessage());
         // attempt with a random operation because attacker can't figure out which operation this message is because it's
         // encrypted..
-        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(modifiedByAttacker, Operation.random(), privateKey);
+        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(modifiedByAttacker, operation, privateKey);
         return response.getLeft();
     }
 
-    private DecryptedPayload replayRead(EncryptedPayloadRequest intercepted) {
-            // attacker is preying on READ operations, sends payload with no private key
-        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(intercepted, Operation.READ, null);
+    private DecryptedPayload replay(EncryptedPayloadRequest intercepted, Operation operation) {
+        // edited - this should encrypt with the attacker's key, can't have null encryption key.
+        Pair<DecryptedPayload, EncryptedPayload> response = library.sendPayloadToServer(intercepted, operation, privateKey);
         return response.getLeft();
     }
 

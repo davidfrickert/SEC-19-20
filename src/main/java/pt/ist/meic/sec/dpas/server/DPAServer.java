@@ -51,7 +51,7 @@ public class DPAServer {
     private AnnouncementDAO announcementDAO = new AnnouncementDAO();
     private UserDAO userDAO = new UserDAO();
 
-    public DPAServer() throws IOException {
+    public DPAServer() {
         try{
             FileInputStream is = new FileInputStream(KEYSTORE_PATH);
 
@@ -69,13 +69,17 @@ public class DPAServer {
                 // Return a key pair
                 this.keyPair = new KeyPair(publicKey, (PrivateKey) key);
             }
-        } catch (IOException | NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (KeyStoreException | UnrecoverableKeyException | CertificateException keyStoreException) {
+        } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | CertificateException | IOException keyStoreException) {
             keyStoreException.printStackTrace();
             throw new IllegalStateException("Problems with keystore, server not starting.");
         }
-        server = new ServerSocket(port);
+
+        try {
+            server = new ServerSocket(port);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("ServerSocket could not be instantiated.");
+        }
 
         initBoards();
 

@@ -3,22 +3,20 @@ package pt.ist.meic.sec.dpas.client;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
-import pt.ist.meic.sec.dpas.common.utils.KeyManager;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.*;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.security.cert.Certificate;
 
 public class ClientExample {
     private final static Logger logger = Logger.getLogger(ClientExample.class);
@@ -31,7 +29,7 @@ public class ClientExample {
 
     private String username;
 
-    public ClientExample(String username) throws UnknownHostException {
+    public ClientExample(String username) {
 
         this.username = username;
 
@@ -52,19 +50,17 @@ public class ClientExample {
                 // Return a key pair
                 this.keyPair = new KeyPair(publicKey, (PrivateKey) key);
             }
-        } catch (IOException e) {
+        } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
             e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (UnrecoverableKeyException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Problems with keystore, client not starting.");
         }
 
-        InetAddress host = InetAddress.getLocalHost();
+        InetAddress host;
+        try {
+            host = InetAddress.getLocalHost();
+        } catch (UnknownHostException e) {
+            throw new IllegalStateException(e);
+        }
         library = new ClientLibrary();
         library.start(host.getHostName(), DPAServer.getPort());
     }
@@ -107,7 +103,7 @@ public class ClientExample {
             }
             case "read" -> {
                 BigInteger nAnnounce = BigInteger.valueOf(Integer.parseInt(data[1]));
-                PublicKey boardKey = KeyManager.loadPublicKey(data[2]);
+                PublicKey boardKey = keyPair.getPublic();
                 yield library.read(keyPair.getPublic(), boardKey, nAnnounce, keyPair.getPrivate());
             }
             case "readgeneral" -> {
