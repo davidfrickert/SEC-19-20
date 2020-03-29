@@ -41,16 +41,18 @@ public class Announcement implements Serializable {
         this.message = message;
         this.creatorId = creatorId;
         this.referred = referred;
-        this.hash = calcHash();
         this.sendTime = sendTime;
+
+        this.hash = calcHash();
     }
 
     public Announcement(String message, PublicKey creatorId, Instant sendTime) {
         this.message = message;
         this.creatorId = creatorId;
         this.referred = new ArrayList<>();
-        this.hash = calcHash();
         this.sendTime = sendTime;
+
+        this.hash = calcHash();
     }
 
     private Announcement() {}
@@ -100,8 +102,10 @@ public class Announcement implements Serializable {
     private String calcHash() {
         try {
             MessageDigest d = MessageDigest.getInstance("SHA-512");
-            List<Object> fields = Arrays.asList(message, sendTime, creatorId, referred);
-            return Hex.encodeHexString(d.digest(ArrayUtils.objectToBytes(fields)));
+            List<Object> fields = Arrays.asList(message, sendTime.toString(), creatorId, referred);
+            String digest = Hex.encodeHexString(d.digest(ArrayUtils.objectToBytes(fields)));
+            System.out.println("Announcement Digest: " + digest);
+            return digest;
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
             throw new RuntimeException();
