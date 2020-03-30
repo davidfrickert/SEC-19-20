@@ -4,7 +4,9 @@ import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.PayloadFactory;
+import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.MissingDataException;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -25,8 +27,9 @@ public class EncryptedPayloadRead extends EncryptedPayloadRequest {
     }
 
     @Override
-    public DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException {
-
+    public DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException, MissingDataException {
+        if(ArrayUtils.anyIsNull(this.getOperation(), this.getTimestamp(), this.getBoardToReadFrom(), this.getMessage(), receiverKey, this.getSenderKey()))
+            throw new MissingDataException("Some fields are null and that's not allowed.");
         Operation op = Operation.fromBytes(Crypto.decryptBytes(this.getOperation(), receiverKey));
         Instant timestamp = Instant.parse(new String(Crypto.decryptBytes(this.getTimestamp(), receiverKey)));
         byte[] data = Crypto.decryptBytes(this.getMessage(), receiverKey);

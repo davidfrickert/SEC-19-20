@@ -7,10 +7,12 @@ import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.PayloadFactory;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.MissingDataException;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
+import java.util.Arrays;
 
 public class EncryptedPayloadReply extends EncryptedPayload {
     private final static Logger logger = Logger.getLogger(EncryptedPayloadReply.class);
@@ -28,7 +30,7 @@ public class EncryptedPayloadReply extends EncryptedPayload {
     }
 
     @Override
-    public DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException {
+    public DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException, MissingDataException {
         Operation op = Operation.fromBytes(Crypto.decryptBytes(this.getOperation(), receiverKey));
         Instant timestamp = Instant.parse(new String(Crypto.decryptBytes(this.getTimestamp(), receiverKey)));
         StatusMessage status = StatusMessage.fromBytes(Crypto.decryptBytes(this.statusMessage, receiverKey));
@@ -36,5 +38,17 @@ public class EncryptedPayloadReply extends EncryptedPayload {
         DecryptedPayload dp = PayloadFactory.genReplyPayloadFromOperation(op, this.getSenderKey(), timestamp, status, null);
 
         return dp;
+    }
+
+
+    @Override
+    public String toString() {
+        return "EncryptedPayloadReply{" +
+                "statusMessage=" + Arrays.toString(statusMessage) +
+                ", signature=" + Arrays.toString(getSignature()) +
+                ", senderKey=" + getSenderKey().hashCode() +
+                ", operation=" + Arrays.toString(getOperation()) +
+                ", timestamp=" + Arrays.toString(getTimestamp()) +
+                '}';
     }
 }

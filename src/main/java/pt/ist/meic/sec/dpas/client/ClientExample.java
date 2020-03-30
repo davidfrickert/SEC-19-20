@@ -4,6 +4,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.io.FileInputStream;
@@ -18,6 +19,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class ClientExample {
@@ -91,12 +93,12 @@ public class ClientExample {
         }
     }
 
-    private Pair<DecryptedPayload, EncryptedPayload> getResponseOrRetry(EncryptedPayload e) {
+    public Pair<DecryptedPayload, EncryptedPayload> getResponseOrRetry(EncryptedPayload e) {
         int max_attempts = 10, attempts = 0;
         while (attempts < max_attempts) {
             try {
                 return getResponse();
-            } catch (SocketTimeoutException ste) {
+            } catch (SocketTimeoutException | IncorrectSignatureException ste) {
                 attempts++;
                 System.out.println("Failure... Retrying. Retry Count: " + attempts);
                 library.write(e);
@@ -109,6 +111,11 @@ public class ClientExample {
         }
         System.out.println("Max Retries reached (" + max_attempts + ").");
         return null;
+    }
+
+    public Optional<Pair<DecryptedPayload, EncryptedPayload>> doActionAndReceiveReply(String command) {
+        EncryptedPayload sent = doAction(command);
+        return Optional.ofNullable(getResponseOrRetry(sent));
     }
 
     public EncryptedPayload doAction(String command) {
@@ -148,11 +155,11 @@ public class ClientExample {
      * @return Pair<DecryptedPayload, EncryptedPayload> Encrypted and Decrypted payload that server sent.
      */
 
-    public Pair<DecryptedPayload, EncryptedPayload> getResponse() throws SocketTimeoutException {
+    public Pair<DecryptedPayload, EncryptedPayload> getResponse() throws SocketTimeoutException, IncorrectSignatureException {
         return library.receiveReply(this.keyPair.getPrivate());
     }
 
-    public EncryptedPayload getEncryptedResponse() throws SocketTimeoutException {
+    public EncryptedPayload getEncryptedResponse() throws SocketTimeoutException, IncorrectSignatureException {
         return getResponse().getRight();
     }
 

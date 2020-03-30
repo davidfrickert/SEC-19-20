@@ -48,7 +48,7 @@ public class AnnouncementsPayload extends ACKPayload {
 
 
 
-        return new EncryptedPayloadRead(idKey, encryptedOperation,encryptedTimestamp, signature, encryptedStatusMsg
+        return new EncryptedPayloadAnnouncements(idKey, encryptedOperation,encryptedTimestamp, signature, encryptedStatusMsg
                 , this.announcements );
     }
 

@@ -7,6 +7,7 @@ import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRequest;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.io.FileInputStream;
@@ -22,8 +23,6 @@ public class Attacker {
 
     private PrivateKey privateKey;
     private PublicKey publicKey;
-
-    private PublicKey serverKey;
 
     private static final String KEYSTORE_PATH = "keys/private/clients/attacker.p12";
     private static final String KEY_ALIAS = "client";
@@ -44,7 +43,7 @@ public class Attacker {
                 Certificate cert = keystore.getCertificate(KEY_ALIAS);
 
                 // Get public key
-                serverKey = cert.getPublicKey();
+                publicKey = cert.getPublicKey();
 
                 // Return a key pair
                 KeyPair keyPair = new KeyPair(publicKey, (PrivateKey) key);
@@ -61,16 +60,16 @@ public class Attacker {
         library.start(host.getHostName(), DPAServer.getPort());
     }
 
-    public DecryptedPayload sendInterceptedRequestPayload(EncryptedPayloadRequest intercepted, AttackType type, Operation operation) throws SocketTimeoutException {
+    public DecryptedPayload sendInterceptedRequestPayload(EncryptedPayloadRequest intercepted, AttackType type, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
         return switch (type) {
             case MITM -> mitm(intercepted, operation);
             case REPLAY -> replay(intercepted, operation);
         };
     }
 
-    private DecryptedPayload mitm(EncryptedPayloadRequest intercepted, Operation operation) throws SocketTimeoutException {
+    private DecryptedPayload mitm(EncryptedPayloadRequest intercepted, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
         // PublicKey auth, byte[] operation, byte[] timestamp, byte[] signature, byte[] message, byte[] linkedAnnouncements
-        EncryptedPayload modifiedByAttacker = new EncryptedPayloadRequest(this.serverKey, intercepted.getOperation(),
+        EncryptedPayload modifiedByAttacker = new EncryptedPayloadRequest(publicKey, intercepted.getOperation(),
                 intercepted.getTimestamp(), intercepted.getSignature(), intercepted.getMessage());
         // attempt with a random operation because attacker can't figure out which operation this message is because it's
         // encrypted..
@@ -79,11 +78,14 @@ public class Attacker {
         return response.getLeft();
     }
 
-    private DecryptedPayload replay(EncryptedPayloadRequest intercepted, Operation operation) throws SocketTimeoutException {
+    private DecryptedPayload replay(EncryptedPayloadRequest intercepted, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
         // edited - this should encrypt with the attacker's key, can't have null encryption key.
         library.write(intercepted);
         Pair<DecryptedPayload, EncryptedPayload> response = library.receiveReply(privateKey);
         return response.getLeft();
     }
 
+    public PublicKey getPublicKey() {
+        return publicKey;
+    }
 }

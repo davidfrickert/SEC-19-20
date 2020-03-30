@@ -1,17 +1,12 @@
-import org.apache.commons.lang3.tuple.Pair;
 import org.testng.annotations.Test;
 import pt.ist.meic.sec.dpas.client.ClientExample;
 import pt.ist.meic.sec.dpas.common.Status;
-import pt.ist.meic.sec.dpas.common.model.Announcement;
-import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
-import java.net.SocketTimeoutException;
-
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 @Test
 public class Requisites {
@@ -32,16 +27,13 @@ public class Requisites {
         String command3 = "readgeneral 2";
 
         try {
-            c1.doAction(command1);
-            ACKPayload received1 = (ACKPayload) c1.getResponse().getLeft();
+            ACKPayload received1 = (ACKPayload) c1.doActionAndReceiveReply(command1).get().getLeft();
             assertEquals(received1.getStatus().getStatus(), Status.Success);
 
-            c2.doAction(command2);
-            ACKPayload received2 = (ACKPayload) c2.getResponse().getLeft();
+            ACKPayload received2 = (ACKPayload) c2.doActionAndReceiveReply(command2).get().getLeft();
             assertEquals(received2.getStatus().getStatus(), Status.Success);
 
-            c2.doAction(command3);
-            AnnouncementsPayload received3 = (AnnouncementsPayload) c2.getResponse().getLeft();
+            AnnouncementsPayload received3 = (AnnouncementsPayload) c2.doActionAndReceiveReply(command3).get().getLeft();
             assertEquals(received3.getAnnouncements().size(), 2);
 
             assertEquals(received3.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
@@ -50,8 +42,9 @@ public class Requisites {
             assertEquals(received3.getAnnouncements().get(1).getOwnerKey(), c2.getPublicKey());
             assertEquals(received3.getAnnouncements().get(1).getMessage(), "hello void ");
 
-        } catch (SocketTimeoutException e) {
+        } catch (NullPointerException e) {
             e.printStackTrace();
+            fail();
         }
 
     }

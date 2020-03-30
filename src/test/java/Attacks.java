@@ -1,20 +1,25 @@
+import org.apache.commons.lang3.tuple.Pair;
 import org.testng.annotations.Test;
 import pt.ist.meic.sec.dpas.attacker.AttackType;
 import pt.ist.meic.sec.dpas.attacker.Attacker;
 import pt.ist.meic.sec.dpas.client.ClientExample;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
+import pt.ist.meic.sec.dpas.common.StatusMessage;
+import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRead;
 import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRequest;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.*;
 
 @Test
 public class Attacks {
@@ -33,7 +38,7 @@ public class Attacks {
      *
      * @throws IOException
      */
-    public void MITM_Post() throws IOException {
+    public void MITM_Post() throws IOException, IncorrectSignatureException {
 
         String command = "post hello world";
         EncryptedPayload sentEncrypted = c.doAction(command);
@@ -49,7 +54,7 @@ public class Attacks {
         }
     }
 
-    public void MITM_PostGeneral() throws IOException {
+    public void MITM_PostGeneral() throws IOException, IncorrectSignatureException {
 
         String command = "post hello world";
         EncryptedPayload sentEncrypted = c.doAction(command);
@@ -64,7 +69,7 @@ public class Attacks {
             cce.printStackTrace();
         }
     }
-    public void MITM_Read() throws IOException {
+    public void MITM_Read() throws IOException, IncorrectSignatureException {
 
         String command = "read 0";
         EncryptedPayload sentEncrypted = c.doAction(command);
@@ -80,7 +85,7 @@ public class Attacks {
         }
     }
 
-    public void MITM_ReadGeneral() throws IOException {
+    public void MITM_ReadGeneral() throws IOException, IncorrectSignatureException {
 
         String command = "read 0";
         EncryptedPayload sentEncrypted = c.doAction(command);
@@ -96,7 +101,7 @@ public class Attacks {
         }
     }
 
-    public void MITM_Register() throws IOException {
+    public void MITM_Register() throws IOException, IncorrectSignatureException {
 
         String command = "register";
         EncryptedPayload sentEncrypted = c.doAction(command);
@@ -118,7 +123,7 @@ public class Attacks {
      *
      * @throws IOException
      */
-    public void replayREAD() throws IOException {
+    public void replayREAD() throws IOException, IncorrectSignatureException {
 
         String command = "read 4";
         EncryptedPayload sentEncrypted = c.doAction(command);
@@ -133,19 +138,44 @@ public class Attacks {
         }
     }
 
-    @Test(expectedExceptions = SocketTimeoutException.class)
-    public void reject() throws SocketTimeoutException {
-        String command = "post attempt";
+    public void missingInformation() throws IncorrectSignatureException, IOException {
+        Attacker attacker = new Attacker();
+        EncryptedPayloadRead e = new EncryptedPayloadRead(attacker.getPublicKey(), null, null, null, null, null);
+        ACKPayload response = (ACKPayload) attacker.sendInterceptedRequestPayload(e, AttackType.REPLAY, Operation.READ);
+        assertEquals(response.getStatus().getStatus(), Status.MissingData);
+
+
+    }
+
+    public void drop() throws SocketTimeoutException {
+        String command = "read 0";
+        // user attempts to read
         EncryptedPayload sent = c.doAction(command);
 
+        // consume message to mimic packet loss so that user doesn't get any answer back
         try {
             c.getEncryptedResponse();
-        } catch (SocketTimeoutException e) {
+        } catch (SocketTimeoutException | IncorrectSignatureException e) {
             e.printStackTrace();
         }
 
-        c.getEncryptedResponse();
+        // attempt again
+        Pair<DecryptedPayload, EncryptedPayload> receivedFromServer = c.getResponseOrRetry(sent);
+        assertNotNull(receivedFromServer);
 
+    }
+
+    public void reject() {
+        String command = "read 0";
+        // user attempts to read
+        EncryptedPayload sent = c.doAction(command);
+
+        Pair<DecryptedPayload, EncryptedPayload> receivedFromServer = c.getResponseOrRetry(sent);
+        DecryptedPayload original = receivedFromServer.getLeft();
+        DecryptedPayload changed = new AnnouncementsPayload(original.getSenderKey(), original.getOperation(),
+                original.getTimestamp(), new StatusMessage(Status.InvalidRequest), new ArrayList<>());
+
+        assertFalse(c.getLibrary().validateReply(changed, receivedFromServer.getRight()));
     }
 
 }

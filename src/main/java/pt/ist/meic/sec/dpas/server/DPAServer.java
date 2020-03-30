@@ -16,6 +16,7 @@ import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.dao.AnnouncementDAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.UserDAO;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.MissingDataException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -151,52 +152,73 @@ public class DPAServer {
             socket = inSoc;
         }
 
+        public void close() {
+            try {
+                this.outStream.close();
+                this.inStream.close();
+            } catch (NullPointerException | IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         public void run() {
             try{
                 outStream = new ObjectOutputStream(socket.getOutputStream());
                 inStream = new ObjectInputStream(socket.getInputStream());
-
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
                 while (!isInterrupted()) {
                     // all operations send EncryptedPayload, so, read and cast
                     EncryptedPayload ep = (EncryptedPayload) inStream.readObject();
                     // decrypt with server privatekey
-                    DecryptedPayload dp = ep.decrypt(DPAServer.this.keyPair.getPrivate());
-                    boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
+                    try {
+                        DecryptedPayload dp = ep.decrypt(DPAServer.this.keyPair.getPrivate());
 
-                    if (!correctSignature) {
-                        logger.warn("Received " + dp.getOperation() + " with bad signature from " + dp.getSenderKey().hashCode());
-                        Operation o = dp.getOperation();
-                        EncryptedPayload e = switch (o) {
-                            case REGISTER:
-                            case POST:
-                            case POST_GENERAL:
-                                yield new ACKPayload(DPAServer.this.keyPair.getPublic(), o, Instant.now(),
-                                        new StatusMessage(Status.InvalidRequest, "Invalid Signature."))
-                                        .encrypt(dp.getSenderKey(), DPAServer.this.keyPair.getPrivate());
-                            case READ:
-                            case READ_GENERAL:
-                                yield new AnnouncementsPayload(DPAServer.this.keyPair.getPublic(), o, Instant.now(),
-                                        new StatusMessage(Status.InvalidRequest, "Invalid Signature."), new ArrayList<>())
-                                        .encrypt(dp.getSenderKey(), DPAServer.this.keyPair.getPrivate());
-                        };
-                        outStream.writeObject(e);
-                    } else {
-                        logger.info("Received " + dp.getOperation() + " with correct signature from " + dp.getSenderKey().hashCode());
-                        // handle regular logic
-                        EncryptedPayload e = switch (dp.getOperation()) {
-                            case REGISTER -> handleRegister((RegisterPayload) dp);
-                            case POST -> handlePost((PostPayload) dp);
-                            case POST_GENERAL -> handlePostGeneral((PostPayload) dp);
-                            case READ -> handleRead((ReadPayload) dp);
-                            case READ_GENERAL -> handleReadGeneral((ReadPayload) dp);
-                        };
-                        outStream.writeObject(e);
+                        boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
+
+                        if (!correctSignature) {
+                            logger.warn("Received " + dp.getOperation() + " with bad signature from " + dp.getSenderKey().hashCode());
+                            Operation o = dp.getOperation();
+                            EncryptedPayload e = switch (o) {
+                                case REGISTER:
+                                case POST:
+                                case POST_GENERAL:
+                                    yield defaultErrorMessage(Status.InvalidRequest, "Invalid Signature.", o, dp.getSenderKey());
+                                case READ:
+                                case READ_GENERAL:
+                                    yield new AnnouncementsPayload(DPAServer.this.keyPair.getPublic(), o, Instant.now(),
+                                            new StatusMessage(Status.InvalidRequest, "Invalid Signature."), new ArrayList<>())
+                                            .encrypt(dp.getSenderKey(), DPAServer.this.keyPair.getPrivate());
+                            };
+                            outStream.writeObject(e);
+                        } else {
+                            logger.info("Received " + dp.getOperation() + " with correct signature from " + dp.getSenderKey().hashCode());
+                            // handle regular logic
+                            EncryptedPayload e = switch (dp.getOperation()) {
+                                case REGISTER -> handleRegister((RegisterPayload) dp);
+                                case POST -> handlePost((PostPayload) dp);
+                                case POST_GENERAL -> handlePostGeneral((PostPayload) dp);
+                                case READ -> handleRead((ReadPayload) dp);
+                                case READ_GENERAL -> handleReadGeneral((ReadPayload) dp);
+                            };
+                            outStream.writeObject(e);
+                        }
+                    } catch (MissingDataException e) {
+                        if (ep.getSenderKey() != null) {
+                            outStream.writeObject(defaultErrorMessage(Status.MissingData,"Missing data", Operation.READ, ep.getSenderKey()));
+                        } else {
+                            this.close();
+                            this.interrupt();
+                        }
                     }
                 }
-
-            } catch (IOException | ClassNotFoundException e) {
+            } catch (ClassNotFoundException | IOException e) {
                 e.printStackTrace();
             }
+
+
         }
 
         private EncryptedPayloadReply handlePost(PostPayload p) {
@@ -282,6 +304,14 @@ public class DPAServer {
         }
 
     }
+
+    private EncryptedPayload defaultErrorMessage(Status status, String errorMsg, Operation o, PublicKey receiverKey) {
+        return new ACKPayload(DPAServer.this.keyPair.getPublic(), o, Instant.now(),
+                new StatusMessage(status, errorMsg))
+                .encrypt(receiverKey, DPAServer.this.keyPair.getPrivate());
+    }
+
+
 
     public static int getPort() {
         return port;

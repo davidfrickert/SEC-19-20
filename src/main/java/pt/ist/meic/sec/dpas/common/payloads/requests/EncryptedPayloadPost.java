@@ -5,6 +5,7 @@ import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.PayloadFactory;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.MissingDataException;
 
 import java.math.BigInteger;
 import java.security.PrivateKey;
@@ -26,8 +27,9 @@ public class EncryptedPayloadPost extends EncryptedPayloadRequest {
     }
 
     @Override
-    public DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException {
-
+    public DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException, MissingDataException {
+        if(ArrayUtils.anyIsNull(this.getOperation(), this.getTimestamp(), this.getLinkedAnnouncements(), this.getMessage()))
+            throw new MissingDataException("Some fields are null and that's not allowed.");
         Operation op = Operation.fromBytes(Crypto.decryptBytes(this.getOperation(), receiverKey));
         Instant timestamp = Instant.parse(new String(Crypto.decryptBytes(this.getTimestamp(), receiverKey)));
         List<BigInteger> linked = ArrayUtils.bytesToList(Crypto.decryptBytes(this.linkedAnnouncements, receiverKey));

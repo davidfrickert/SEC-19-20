@@ -8,6 +8,7 @@ import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -251,16 +252,16 @@ public class ClientLibrary {
         return r.encrypt(serverKey, signKey);
     }
 
-    public Pair<DecryptedPayload, EncryptedPayload> receiveReply(PrivateKey senderPrivateKey) throws SocketTimeoutException {
+    public Pair<DecryptedPayload, EncryptedPayload> receiveReply(PrivateKey senderPrivateKey) throws SocketTimeoutException, IncorrectSignatureException {
         try {
             EncryptedPayload ep = (EncryptedPayload) in.readObject();
             DecryptedPayload dp = ep.decrypt(senderPrivateKey);
-            boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
-            if (! correctSignature) {
-                logger.warn("Received reply with bad signature");
-            } else {
-                logger.info("Received reply correctly!");
-            }
+            boolean validReply = validateReply(dp, ep);
+            System.out.println(dp);
+            System.out.println(ep.getSenderKey());
+            if (!validReply)
+                throw new IncorrectSignatureException("Received reply with bad signature");
+
             return Pair.of(dp, ep);
         } catch (SocketTimeoutException ste) {
             throw ste;
@@ -268,5 +269,20 @@ public class ClientLibrary {
             exc.printStackTrace();
         }
         return null;
+    }
+
+    public boolean validateReply(DecryptedPayload dp, EncryptedPayload ep) {
+        boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
+        if (! correctSignature) {
+            logger.info("bad sign");
+            return false;
+        } else {
+            logger.info("Received reply correctly!");
+            return true;
+        }
+    }
+
+    public PublicKey getServerKey() {
+        return serverKey;
     }
 }

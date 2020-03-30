@@ -1,11 +1,14 @@
 package pt.ist.meic.sec.dpas.common.payloads.common;
 
 import org.apache.log4j.Logger;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.MissingDataException;
 
+import javax.persistence.Entity;
 import java.io.Serializable;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
+@Entity
 public abstract class EncryptedPayload implements Serializable {
     private final static Logger logger = Logger.getLogger(EncryptedPayload.class);
 
@@ -38,5 +41,5 @@ public abstract class EncryptedPayload implements Serializable {
         return timestamp;
     }
 
-    public abstract DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException;
+    public abstract DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException, MissingDataException;
 }

@@ -3,6 +3,8 @@ package pt.ist.meic.sec.dpas.common.utils;
 import java.io.*;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 public class ArrayUtils {
 
@@ -53,5 +55,9 @@ public class ArrayUtils {
 
     public static <T> T bytesToGeneric(byte[] bytes) {
         return (T) bytesToObject(bytes);
+    }
+
+    public static boolean anyIsNull(Object... array) {
+        return Stream.of(array).anyMatch(Objects::isNull);
     }
 }
