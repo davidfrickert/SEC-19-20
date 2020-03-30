@@ -48,7 +48,7 @@ public class Attacks {
         try {
             // all replies can be casted to ACKPayload to view status message
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
-            assertEquals(p.getStatus().getStatus(), Status.InvalidRequest);
+            assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException cce) {
             cce.printStackTrace();
         }
@@ -64,7 +64,7 @@ public class Attacks {
         try {
             // all replies can be casted to ACKPayload to view status message
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
-            assertEquals(p.getStatus().getStatus(), Status.InvalidRequest);
+            assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException cce) {
             cce.printStackTrace();
         }
@@ -79,7 +79,7 @@ public class Attacks {
         try {
             // all replies can be casted to ACKPayload to view status message
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
-            assertEquals(p.getStatus().getStatus(), Status.InvalidRequest);
+            assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException cce) {
             cce.printStackTrace();
         }
@@ -95,7 +95,7 @@ public class Attacks {
         try {
             // all replies can be casted to ACKPayload to view status message
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
-            assertEquals(p.getStatus().getStatus(), Status.InvalidRequest);
+            assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException cce) {
             cce.printStackTrace();
         }
@@ -111,7 +111,7 @@ public class Attacks {
         try {
             // all replies can be casted to ACKPayload to view status message
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
-            assertEquals(p.getStatus().getStatus(), Status.InvalidRequest);
+            assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
 
         } catch (ClassCastException cce) {
             cce.printStackTrace();

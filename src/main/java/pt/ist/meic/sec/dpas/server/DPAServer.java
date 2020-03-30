@@ -185,12 +185,9 @@ public class DPAServer {
                                 case REGISTER:
                                 case POST:
                                 case POST_GENERAL:
-                                    yield defaultErrorMessage(Status.InvalidRequest, "Invalid Signature.", o, dp.getSenderKey());
                                 case READ:
                                 case READ_GENERAL:
-                                    yield new AnnouncementsPayload(DPAServer.this.keyPair.getPublic(), o, Instant.now(),
-                                            new StatusMessage(Status.InvalidRequest, "Invalid Signature."), new ArrayList<>())
-                                            .encrypt(dp.getSenderKey(), DPAServer.this.keyPair.getPrivate());
+                                    yield defaultErrorMessage(Status.InvalidSignature, "Invalid Signature.", o, dp.getSenderKey());
                             };
                             outStream.writeObject(e);
                         } else {

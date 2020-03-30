@@ -2,6 +2,7 @@ package pt.ist.meic.sec.dpas.common.payloads.common;
 
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
+import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
 import pt.ist.meic.sec.dpas.common.model.Announcement;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
@@ -32,10 +33,15 @@ public class PayloadFactory {
 
     public static DecryptedPayload genReplyPayloadFromOperation(Operation o, PublicKey key, Instant timestamp,
                                                                 StatusMessage status, List<Announcement> announcements) {
-        DecryptedPayload decryptedPayload = switch (o) {
-            case REGISTER, POST, POST_GENERAL -> new ACKPayload(key, o, timestamp, status);
-            case READ, READ_GENERAL -> new AnnouncementsPayload(key, o, timestamp, status, announcements);
-        };
+        DecryptedPayload decryptedPayload;
+        if (status.getStatus().equals(Status.Success)) {
+            decryptedPayload = switch (o) {
+                case REGISTER, POST, POST_GENERAL -> new ACKPayload(key, o, timestamp, status);
+                case READ, READ_GENERAL -> new AnnouncementsPayload(key, o, timestamp, status, announcements);
+            };
+        } else {
+            decryptedPayload = new ACKPayload(key, o, timestamp, status);
+        }
         logger.info("Decrypted " + decryptedPayload);
         return decryptedPayload;
     }
