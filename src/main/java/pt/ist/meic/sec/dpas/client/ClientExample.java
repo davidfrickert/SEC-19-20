@@ -1,5 +1,6 @@
 package pt.ist.meic.sec.dpas.client;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
@@ -17,6 +18,8 @@ import java.net.UnknownHostException;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -134,8 +137,8 @@ public class ClientExample {
                 yield library.postGeneral(keyPair.getPublic(), announcementGeneral, prevAnnouncementsGen, keyPair.getPrivate());
             }
             case "read" -> {
-                BigInteger nAnnounce = BigInteger.valueOf(Integer.parseInt(data[1]));
-                PublicKey boardKey = keyPair.getPublic();
+                BigInteger nAnnounce = BigInteger.valueOf(Integer.parseInt(data[2]));
+                PublicKey boardKey = parseStringToPublicKey(data[1]);
                 yield library.read(keyPair.getPublic(), boardKey, nAnnounce, keyPair.getPrivate());
             }
             case "readgeneral" -> {
@@ -216,5 +219,22 @@ public class ClientExample {
 
     public ClientLibrary getLibrary() {
         return library;
+    }
+
+    public PublicKey parseStringToPublicKey(String s){
+        PublicKey pubKey = null;
+        try{
+            byte[] publicBytes = Base64.decodeBase64(s);
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            pubKey = keyFactory.generatePublic(keySpec);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+
+        return pubKey;
+
     }
 }
