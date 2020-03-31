@@ -36,13 +36,7 @@ public class UserBoard extends Board {
     }
 
     public List<Announcement> getNAnnouncements(ReadPayload r) {
-        PublicKey senderKey = r.getSenderKey();
-        PublicKey boardKey = r.getBoardToReadFrom();
-        if (senderKey.equals(boardKey)) {
-            return super.getNAnnouncements(r);
-        } else {
-            throw new IllegalArgumentException("User attempted to read wrong board");
-        }
+        return super.getNAnnouncements(r);
     }
 
     @Override

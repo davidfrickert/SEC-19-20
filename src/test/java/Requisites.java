@@ -1,14 +1,20 @@
+import org.apache.commons.lang3.tuple.Pair;
 import org.testng.annotations.Test;
 import pt.ist.meic.sec.dpas.client.ClientExample;
 import pt.ist.meic.sec.dpas.common.Status;
+import pt.ist.meic.sec.dpas.common.model.Announcement;
+import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
+import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
+import java.net.SocketTimeoutException;
+import java.util.Base64;
 
-@Test
+import static org.testng.Assert.assertEquals;
+
 public class Requisites {
 
     private DPAServer s = new DPAServer();
@@ -21,6 +27,27 @@ public class Requisites {
     ClientExample c1 = new ClientExample("test1", "keys/private/clients/1.p12", "client1");
     ClientExample c2 = new ClientExample("test2", "keys/private/clients/2.p12", "client2");
 
+    @Test
+    public void testRegister(){
+
+        String command1 = "register";
+
+        try{
+            c1.doAction(command1);
+            ACKPayload received1 = (ACKPayload) c1.getResponse().getLeft();
+            assertEquals(received1.getStatus().getStatus(), Status.Success);
+
+            c2.doAction(command1);
+            ACKPayload received2 = (ACKPayload) c2.getResponse().getLeft();
+            assertEquals(received2.getStatus().getStatus(), Status.Success);
+        } catch (SocketTimeoutException | IncorrectSignatureException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    @Test
     public void generalboard() {
         String command1 = "postgeneral hello world";
         String command2 = "postgeneral hello void | 0";
@@ -44,8 +71,57 @@ public class Requisites {
 
         } catch (NullPointerException e) {
             e.printStackTrace();
-            fail();
+            //fail();
         }
 
     }
+
+    @Test
+    /**
+     * Try to read the own posted announcement
+     */
+    public void testSimplePostAndRead(){
+        String command1 = "post hello";
+        String command2 = "read " + Base64.getEncoder().encodeToString(c1.getPublicKey().getEncoded())  + " 1";
+
+        try{
+            c1.doAction(command1);
+            ACKPayload received1 = (ACKPayload) c1.getResponse().getLeft();
+            assertEquals(received1.getStatus().getStatus(), Status.Success);
+
+            c1.doAction(command2);
+            AnnouncementsPayload received3 = (AnnouncementsPayload) c1.getResponse().getLeft();
+
+            assertEquals(received3.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
+            assertEquals(received3.getAnnouncements().get(0).getMessage(), "hello ");
+
+        } catch (SocketTimeoutException | IncorrectSignatureException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    /**
+     * Try to read the announcement posted by another user
+     */
+    public void testReadSomeoneElsePost(){
+        String command1 = "post hello";
+        String command2 = "read " + Base64.getEncoder().encodeToString(c1.getPublicKey().getEncoded()) + " 1";
+
+        try{
+            c1.doAction(command1);
+            ACKPayload received1 = (ACKPayload) c1.getResponse().getLeft();
+            assertEquals(received1.getStatus().getStatus(), Status.Success);
+
+            c2.doAction(command2);
+            AnnouncementsPayload received3 = (AnnouncementsPayload) c2.getResponse().getLeft();
+
+            assertEquals(received3.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
+            assertEquals(received3.getAnnouncements().get(0).getMessage(), "hello ");
+
+        } catch (SocketTimeoutException | IncorrectSignatureException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
