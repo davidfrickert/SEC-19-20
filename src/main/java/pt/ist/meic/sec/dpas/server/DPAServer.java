@@ -219,7 +219,6 @@ public class DPAServer {
         }
 
         private EncryptedPayloadReply handlePost(PostPayload p) {
-            System.out.println(p.getTimestamp());
             Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
             Optional<UserBoard> optUB = getUserBoard(p.getSenderKey());
             boolean success;
@@ -293,6 +292,7 @@ public class DPAServer {
                 status = new StatusMessage(Status.Success);
                 userDAO.persist(u);
                 UserBoard userBoard = new UserBoard(u.getPublicKey());
+                allBoards.put(u.getPublicKey(), userBoard);
                 userBoardDAO.persist(userBoard);
             }
             return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.REGISTER, Instant.now(),

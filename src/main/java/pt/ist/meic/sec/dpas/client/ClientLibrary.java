@@ -257,8 +257,6 @@ public class ClientLibrary {
             EncryptedPayload ep = (EncryptedPayload) in.readObject();
             DecryptedPayload dp = ep.decrypt(senderPrivateKey);
             boolean validReply = validateReply(dp, ep);
-            System.out.println(dp);
-            System.out.println(ep.getSenderKey());
             if (!validReply)
                 throw new IncorrectSignatureException("Received reply with bad signature");
 

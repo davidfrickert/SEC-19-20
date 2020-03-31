@@ -56,14 +56,14 @@ public class Attacks {
 
     public void MITM_PostGeneral() throws IOException, IncorrectSignatureException {
 
-        String command = "post hello world";
+        String command = "postgeneral hello world";
         EncryptedPayload sentEncrypted = c.doAction(command);
         c.getEncryptedResponse();
 
         Attacker attacker = new Attacker();
         try {
             // all replies can be casted to ACKPayload to view status message
-            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST_GENERAL);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException cce) {
             cce.printStackTrace();
@@ -78,7 +78,7 @@ public class Attacks {
         Attacker attacker = new Attacker();
         try {
             // all replies can be casted to ACKPayload to view status message
-            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.READ);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException cce) {
             cce.printStackTrace();
@@ -87,14 +87,14 @@ public class Attacks {
 
     public void MITM_ReadGeneral() throws IOException, IncorrectSignatureException {
 
-        String command = "read 0";
+        String command = "readgeneral 0";
         EncryptedPayload sentEncrypted = c.doAction(command);
         c.getEncryptedResponse();
 
         Attacker attacker = new Attacker();
         try {
             // all replies can be casted to ACKPayload to view status message
-            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.READ_GENERAL);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException cce) {
             cce.printStackTrace();
@@ -110,7 +110,7 @@ public class Attacks {
         Attacker attacker = new Attacker();
         try {
             // all replies can be casted to ACKPayload to view status message
-            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.REGISTER);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
 
         } catch (ClassCastException cce) {

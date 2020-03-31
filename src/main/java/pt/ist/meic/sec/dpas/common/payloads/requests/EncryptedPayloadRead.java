@@ -28,9 +28,12 @@ public class EncryptedPayloadRead extends EncryptedPayloadRequest {
 
     @Override
     public DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException, MissingDataException {
-        if(ArrayUtils.anyIsNull(this.getOperation(), this.getTimestamp(), this.getBoardToReadFrom(), this.getMessage(), receiverKey, this.getSenderKey()))
+        if(ArrayUtils.anyIsNull(this.getOperation(), this.getTimestamp(), this.getSenderKey(), this.getMessage(), receiverKey))
             throw new MissingDataException("Some fields are null and that's not allowed.");
         Operation op = Operation.fromBytes(Crypto.decryptBytes(this.getOperation(), receiverKey));
+        if (op.equals(Operation.READ) && boardToReadFrom == null)
+            throw new MissingDataException("Read Operation must specify a board to read.");
+
         Instant timestamp = Instant.parse(new String(Crypto.decryptBytes(this.getTimestamp(), receiverKey)));
         byte[] data = Crypto.decryptBytes(this.getMessage(), receiverKey);
 
