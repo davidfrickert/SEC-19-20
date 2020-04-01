@@ -27,7 +27,7 @@ public class ReadPayload extends DecryptedPayload {
 
     public byte[] asBytes() {
         byte[] key = boardToReadFrom != null ? boardToReadFrom.getEncoded() : new byte[0];
-        return ArrayUtils.merge(ArrayUtils.objectToBytes(nAnnouncements), key, super.asBytes());
+        return ArrayUtils.merge(key, ArrayUtils.objectToBytes(nAnnouncements), super.asBytes());
     }
 
 

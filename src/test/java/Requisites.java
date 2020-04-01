@@ -1,10 +1,6 @@
-import org.apache.commons.lang3.tuple.Pair;
 import org.testng.annotations.Test;
 import pt.ist.meic.sec.dpas.client.ClientExample;
 import pt.ist.meic.sec.dpas.common.Status;
-import pt.ist.meic.sec.dpas.common.model.Announcement;
-import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
@@ -14,6 +10,7 @@ import java.net.SocketTimeoutException;
 import java.util.Base64;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 public class Requisites {
 
@@ -41,6 +38,7 @@ public class Requisites {
             ACKPayload received2 = (ACKPayload) c2.getResponse().getLeft();
             assertEquals(received2.getStatus().getStatus(), Status.Success);
         } catch (SocketTimeoutException | IncorrectSignatureException e) {
+            fail();
             e.printStackTrace();
         }
 
@@ -64,10 +62,10 @@ public class Requisites {
             assertEquals(received3.getAnnouncements().size(), 2);
 
             assertEquals(received3.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
-            assertEquals(received3.getAnnouncements().get(0).getMessage(), "hello world ");
+            assertEquals(received3.getAnnouncements().get(0).getMessage(), "hello world");
 
             assertEquals(received3.getAnnouncements().get(1).getOwnerKey(), c2.getPublicKey());
-            assertEquals(received3.getAnnouncements().get(1).getMessage(), "hello void ");
+            assertEquals(received3.getAnnouncements().get(1).getMessage(), "hello void");
 
         } catch (NullPointerException e) {
             e.printStackTrace();
@@ -110,18 +108,18 @@ public class Requisites {
             AnnouncementsPayload received5 = (AnnouncementsPayload) c1.getResponse().getLeft();
             assertEquals(received5.getAnnouncements().size(), 2);
             assertEquals(received5.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
-            assertEquals(received5.getAnnouncements().get(1).getMessage(), "goodbye folks! ");
+            assertEquals(received5.getAnnouncements().get(1).getMessage(), "goodbye folks!");
             assertEquals(received5.getAnnouncements().get(0).getMessage(),
-                    "still here man, glad to be alive... ");
+                    "still here man, glad to be alive...");
 
 
             c2.doAction(command5);
             AnnouncementsPayload received6 = (AnnouncementsPayload) c2.getResponse().getLeft();
             assertEquals(received5.getAnnouncements().size(), 2);
             assertEquals(received5.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
-            assertEquals(received5.getAnnouncements().get(1).getMessage(), "goodbye folks! ");
+            assertEquals(received5.getAnnouncements().get(1).getMessage(), "goodbye folks!");
             assertEquals(received5.getAnnouncements().get(0).getMessage(),
-                    "still here man, glad to be alive... ");
+                    "still here man, glad to be alive...");
 
         } catch (SocketTimeoutException | IncorrectSignatureException e) {
             e.printStackTrace();
