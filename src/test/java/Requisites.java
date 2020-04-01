@@ -24,7 +24,7 @@ public class Requisites {
     ClientExample c1 = new ClientExample("test1", "keys/private/clients/1.p12", "client1");
     ClientExample c2 = new ClientExample("test2", "keys/private/clients/2.p12", "client2");
 
-    @Test
+    @Test(priority = 1)
     public void testRegister(){
 
         String command1 = "register";
@@ -45,7 +45,7 @@ public class Requisites {
 
     }
 
-    @Test
+    @Test(priority = 2)
     public void generalboard() {
         String command1 = "postgeneral hello world";
         String command2 = "postgeneral hello void | 0";
@@ -75,7 +75,7 @@ public class Requisites {
     }
 
 
-    @Test
+    @Test(priority = 3)
     /**
      * Try to read the own posted announcement
      */

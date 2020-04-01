@@ -300,8 +300,10 @@ public class DPAServer {
         private EncryptedPayloadReply handleRegister(RegisterPayload p){
             String userName = p.getData();
             StatusMessage status;
-            if (userDAO.exists(userName)) {
+            if (userDAO.exists("username", userName)) {
                 status = new StatusMessage(Status.InvalidRequest, "Username already taken.");
+            } else if (userDAO.exists("publicKey", p.getSenderKey())) {
+                status = new StatusMessage(Status.InvalidRequest, "Key already assigned to a User.");
             } else {
                 User u = new User(p.getSenderKey(), userName);
                 status = new StatusMessage(Status.Success);

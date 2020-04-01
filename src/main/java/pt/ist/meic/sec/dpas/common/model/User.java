@@ -18,6 +18,7 @@ public class User implements Serializable {
     @Column(columnDefinition = "VARBINARY(4096)")
     private PublicKey publicKey;
 
+    @Column(unique = true)
     private String username;
 
     public User(){}

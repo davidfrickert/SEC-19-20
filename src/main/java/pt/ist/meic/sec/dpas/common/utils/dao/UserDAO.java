@@ -14,13 +14,13 @@ public class UserDAO extends DAO<User, Integer> {
         super(User.class);
     }
 
-    public User findByName(String name) {
+    public User findByName(String attr, Object value) {
         openSessionWithTransaction();
         Session session = getCurrentSession();
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<User> query = cb.createQuery(getType());
         Root<User> root = query.from(getType());
-        Predicate nameMatches = cb.equal(root.get("username"), name);
+        Predicate nameMatches = cb.equal(root.get(attr), value);
         query.select(root).where(nameMatches);
         try {
             User u = session.createQuery(query).getSingleResult();
@@ -32,7 +32,7 @@ public class UserDAO extends DAO<User, Integer> {
         }
     }
 
-    public boolean exists(String name) {
-        return findByName(name) != null;
+    public boolean exists(String attr, Object value) {
+        return findByName(attr, value) != null;
     }
 }
