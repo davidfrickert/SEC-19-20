@@ -14,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -29,7 +30,7 @@ public class Attacker {
 
     private ClientLibrary library;
 
-    public Attacker() throws IOException {
+    public Attacker() {
 
         try{
             FileInputStream is = new FileInputStream(KEYSTORE_PATH);
@@ -55,9 +56,16 @@ public class Attacker {
             throw new IllegalStateException("Problems with keystore, client not starting.");
         }
 
-        InetAddress host = InetAddress.getLocalHost();
-        library = new ClientLibrary();
-        library.start(host.getHostName(), DPAServer.getPort());
+        InetAddress host;
+        try {
+            host = InetAddress.getLocalHost();
+            library = new ClientLibrary();
+            library.start(host.getHostName(), DPAServer.getPort());
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+            throw new IllegalStateException(e);
+        }
+
     }
 
     public DecryptedPayload sendInterceptedRequestPayload(EncryptedPayloadRequest intercepted, AttackType type, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {

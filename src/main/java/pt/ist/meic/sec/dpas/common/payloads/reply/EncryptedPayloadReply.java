@@ -6,6 +6,7 @@ import pt.ist.meic.sec.dpas.common.StatusMessage;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.PayloadFactory;
+import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.MissingDataException;
 
@@ -40,6 +41,10 @@ public class EncryptedPayloadReply extends EncryptedPayload {
         return dp;
     }
 
+    @Override
+    public byte[] decryptedBytes(PrivateKey decryptionKey) {
+        return ArrayUtils.merge(Crypto.decryptBytes(statusMessage, decryptionKey), super.decryptedBytes(decryptionKey));
+    }
 
     @Override
     public String toString() {

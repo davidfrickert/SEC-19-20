@@ -25,7 +25,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.List;
+import java.util.LinkedHashSet;
 
 public class ClientLibrary {
     private final static Logger logger = Logger.getLogger(ClientLibrary.class);
@@ -110,14 +110,14 @@ public class ClientLibrary {
         return sentEncrypted;
     }
 
-    public EncryptedPayload post(PublicKey authKey, String message, List<BigInteger> announcements, PrivateKey signKey) {
+    public EncryptedPayload post(PublicKey authKey, String message, LinkedHashSet<String> announcements, PrivateKey signKey) {
         Operation op = Operation.POST;
         EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
         write(sentEncrypted);
         return sentEncrypted;
     }
 
-    public EncryptedPayload postGeneral(PublicKey authKey, String message, List<BigInteger> announcements, PrivateKey signKey) {
+    public EncryptedPayload postGeneral(PublicKey authKey, String message, LinkedHashSet<String> announcements, PrivateKey signKey) {
         Operation op = Operation.POST_GENERAL;
         EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
         write(sentEncrypted);
@@ -220,15 +220,15 @@ public class ClientLibrary {
      * @return EncryptedPayload to send
      */
     public EncryptedPayload createEncryptedPostPayload(PublicKey authKey, String announcementMessage,
-                                                       List<BigInteger> linkedAnnouncements, PrivateKey signKey,
+                                                       LinkedHashSet<String> linkedAnnouncements, PrivateKey signKey,
                                                        Operation op) {
         if (op != Operation.POST && op != Operation.POST_GENERAL) {
             throw new IllegalArgumentException("Wrong Operation for this method " + op.name());
         }
         logger.info("Attempting " + op.name());
         Instant time = Instant.now();
-
-        return new PostPayload(announcementMessage, authKey, op, time, linkedAnnouncements).encrypt(serverKey, signKey);
+        PostPayload p = new PostPayload(announcementMessage, authKey, op, time, linkedAnnouncements);
+        return p.encrypt(serverKey, signKey);
     }
 
     /**
@@ -256,9 +256,13 @@ public class ClientLibrary {
         try {
             EncryptedPayload ep = (EncryptedPayload) in.readObject();
             DecryptedPayload dp = ep.decrypt(senderPrivateKey);
-            boolean validReply = validateReply(dp, ep);
-            if (!validReply)
+            //boolean validReply = validateReply(dp, ep);
+            boolean validReply = ep.verifySignature(senderPrivateKey);
+            if (!validReply) {
+                logger.warn("Bad Signature.");
+
                 throw new IncorrectSignatureException("Received reply with bad signature");
+            }
 
             return Pair.of(dp, ep);
         } catch (SocketTimeoutException ste) {

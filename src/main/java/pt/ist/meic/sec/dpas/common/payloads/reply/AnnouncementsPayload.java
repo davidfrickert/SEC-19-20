@@ -28,7 +28,7 @@ public class AnnouncementsPayload extends ACKPayload {
 
     @Override
     public byte[] asBytes() {
-        return ArrayUtils.merge(super.asBytes(), ArrayUtils.objectToBytes(this.announcements));
+        return ArrayUtils.merge(ArrayUtils.objectToBytes(this.announcements), super.asBytes());
     }
 
     public List<Announcement> getAnnouncements() {
@@ -41,7 +41,7 @@ public class AnnouncementsPayload extends ACKPayload {
         byte[] encryptedOperation = Crypto.encryptBytes(this.getOperation().name().getBytes(), receiverKey);
         byte[] encryptedTimestamp = Crypto.encryptBytes(this.getTimestamp().toString().getBytes(), receiverKey);
         byte[] encryptedStatusMsg = Crypto.encryptBytes(this.getStatus().asBytes(), receiverKey);
-
+        byte[] byteAnnouncements = ArrayUtils.objectToBytes(this.announcements);
         byte[] originalData = this.asBytes();
 
         byte[] signature = Crypto.sign(originalData, senderKey);
@@ -49,7 +49,7 @@ public class AnnouncementsPayload extends ACKPayload {
 
 
         return new EncryptedPayloadAnnouncements(idKey, encryptedOperation,encryptedTimestamp, signature, encryptedStatusMsg
-                , this.announcements );
+                , byteAnnouncements);
     }
 
     @Override

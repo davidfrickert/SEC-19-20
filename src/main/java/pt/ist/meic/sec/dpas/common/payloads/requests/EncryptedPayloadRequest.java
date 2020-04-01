@@ -46,4 +46,9 @@ public class EncryptedPayloadRequest extends EncryptedPayload {
     public byte[] getMessage() {
         return message;
     }
+
+    @Override
+    public byte[] decryptedBytes(PrivateKey decryptionKey) {
+        return ArrayUtils.merge(Crypto.decryptBytes(message, decryptionKey), super.decryptedBytes(decryptionKey));
+    }
 }

@@ -1,6 +1,8 @@
 package pt.ist.meic.sec.dpas.common.payloads.common;
 
 import org.apache.log4j.Logger;
+import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
+import pt.ist.meic.sec.dpas.common.utils.Crypto;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.MissingDataException;
 
 import javax.persistence.Entity;
@@ -42,4 +44,13 @@ public abstract class EncryptedPayload implements Serializable {
     }
 
     public abstract DecryptedPayload decrypt(PrivateKey receiverKey) throws IllegalStateException, MissingDataException;
+
+    public byte[] decryptedBytes(PrivateKey decryptionKey) {
+        return ArrayUtils.merge(senderKey.getEncoded(), Crypto.decryptBytes(operation, decryptionKey),
+                Crypto.decryptBytes(timestamp, decryptionKey));
+    }
+
+    public boolean verifySignature(PrivateKey decryptionKey) throws IllegalStateException {
+        return Crypto.verify(this.decryptedBytes(decryptionKey), getSignature(), senderKey);
+    }
 }

@@ -39,4 +39,10 @@ public class EncryptedPayloadRead extends EncryptedPayloadRequest {
 
         return PayloadFactory.genRequestPayloadFromOperation(op, data, this.getSenderKey(), timestamp, null, boardToReadFrom);
     }
+
+    @Override
+    public byte[] decryptedBytes(PrivateKey decryptionKey) {
+        byte[] key = boardToReadFrom != null ? boardToReadFrom.getEncoded() : new byte[0];
+        return ArrayUtils.merge(key, super.decryptedBytes(decryptionKey));
+    }
 }

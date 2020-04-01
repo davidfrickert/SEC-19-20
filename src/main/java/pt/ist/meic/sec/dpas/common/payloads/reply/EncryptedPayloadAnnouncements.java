@@ -15,9 +15,9 @@ import java.time.Instant;
 import java.util.List;
 
 public class EncryptedPayloadAnnouncements extends EncryptedPayloadReply {
-    private final List<Announcement> announcements;
+    private final byte[] announcements;
     public EncryptedPayloadAnnouncements(PublicKey auth, byte[] operation, byte[] timestamp, byte[] signature,
-                                         byte[] statusMessage, List<Announcement> announcements) {
+                                         byte[] statusMessage, byte[] announcements) {
         super(auth, operation, timestamp, signature, statusMessage);
         this.announcements = announcements;
     }
@@ -29,9 +29,15 @@ public class EncryptedPayloadAnnouncements extends EncryptedPayloadReply {
         Operation op = Operation.fromBytes(Crypto.decryptBytes(this.getOperation(), receiverKey));
         Instant timestamp = Instant.parse(new String(Crypto.decryptBytes(this.getTimestamp(), receiverKey)));
         StatusMessage status = StatusMessage.fromBytes(Crypto.decryptBytes(this.getStatusMessage(), receiverKey));
+        List<Announcement> announcements = ArrayUtils.bytesToList(this.announcements);
 
         DecryptedPayload dp = PayloadFactory.genReplyPayloadFromOperation(op, this.getSenderKey(), timestamp, status, announcements);
 
         return dp;
+    }
+
+    @Override
+    public byte[] decryptedBytes(PrivateKey decryptionKey) {
+        return ArrayUtils.merge(announcements, super.decryptedBytes(decryptionKey));
     }
 }

@@ -24,10 +24,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Scanner;
+import java.util.*;
 
 public class ClientExample {
     private final static Logger logger = Logger.getLogger(ClientExample.class);
@@ -78,6 +75,12 @@ public class ClientExample {
     public void input(InputStream src) {
         System.out.println("Welcome to DPAS! Your public key is:" +
                 parsePublicKeyToString(getPublicKey()));
+        System.out.println("Possible operations: ");
+        System.out.println("  register");
+        System.out.println("  post <message>");
+        System.out.println("  read <public key of board> <number of announcements to read>");
+        System.out.println("  postgeneral <message>");
+        System.out.println("  readgeneral <number of announcements to read>");
         Scanner sc = new Scanner(src);
         String line;
         String[] split;
@@ -93,12 +96,16 @@ public class ClientExample {
                 }
             }
             // sends sentPayload
-            EncryptedPayload sentPayload = doAction(line);
-            Pair<DecryptedPayload, EncryptedPayload> response = getResponseOrRetry(sentPayload);
-            if (response == null) {
-                System.out.println("Failure sending this request");
-            } else {
-                processResponse(response.getLeft());
+            try {
+                EncryptedPayload sentPayload = doAction(line);
+                Pair<DecryptedPayload, EncryptedPayload> response = getResponseOrRetry(sentPayload);
+                if (response == null) {
+                    System.out.println("Failure sending this request");
+                } else {
+                    processResponse(response.getLeft());
+                }
+            } catch (ArrayIndexOutOfBoundsException ie) {
+                System.out.println("wrong syntax");
             }
             System.out.print(">>");
         }
@@ -136,12 +143,12 @@ public class ClientExample {
             case "register" -> library.register(username, keyPair.getPublic(), keyPair.getPrivate());
             case "post" -> {
                 String announcement = getAnnouncement(data);
-                List<BigInteger> prevAnnouncements = getPreviousAnnouncement(data);
+                LinkedHashSet<String> prevAnnouncements = getPreviousAnnouncement(data);
                 yield library.post(keyPair.getPublic(), announcement, prevAnnouncements, keyPair.getPrivate());
             }
             case "postgeneral" -> {
                 String announcementGeneral = getAnnouncement(data);
-                List<BigInteger> prevAnnouncementsGen = getPreviousAnnouncement(data);
+                LinkedHashSet<String> prevAnnouncementsGen = getPreviousAnnouncement(data);
                 yield library.postGeneral(keyPair.getPublic(), announcementGeneral, prevAnnouncementsGen, keyPair.getPrivate());
             }
             case "read" -> {
@@ -206,11 +213,13 @@ public class ClientExample {
                 found = true;
             }
         }
+        // remove last " "
+        sb.setLength(sb.length() - 1);
         return sb.toString();
     }
 
-    private static List<BigInteger> getPreviousAnnouncement(String[] line) {
-        List<BigInteger> result = new ArrayList<>();
+    private static LinkedHashSet<String> getPreviousAnnouncement(String[] line) {
+        List<String> result = new ArrayList<>();
         boolean found = false;
         for(int i = 1; i < line.length; i++){
             if(line[i].equals("|")){
@@ -219,10 +228,11 @@ public class ClientExample {
             }
 
             if(found){
-                result.add(BigInteger.valueOf(Integer.parseInt(line[i])));
+                result.add(line[i]);
             }
         }
-        return result;
+        //return ArrayUtils.bytesToSet(ArrayUtils.objectToBytes(new HashSet<>(result)));
+        return new LinkedHashSet<>(result);
     }
 
     public ClientLibrary getLibrary() {
@@ -242,17 +252,33 @@ public class ClientExample {
                 case READ:
                 case READ_GENERAL:
                     List<Announcement> aList = ((AnnouncementsPayload) response).getAnnouncements();
-                    for(int i = 0; i < aList.size(); i++){
-                        System.out.println("Message: " + aList.get(i).getMessage());
+                    System.out.println("Read successful!");
+                    System.out.println("Read " + aList.size() + " announcements.");
+                    for (Announcement announcement : aList) {
+                        System.out.println("Hash: " + announcement.getHash());
+                        System.out.println("Message: " + announcement.getMessage());
                         System.out.println("Posted by: " +
-                                parsePublicKeyToString(aList.get(i).getOwnerKey()));
-                        System.out.println("At: " + aList.get(i).getReceivedTime());
+                                parsePublicKeyToString(announcement.getOwnerKey()));
+                        System.out.println("At: " + announcement.getReceivedTime());
+                        System.out.println("Linked: " + announcement.getReferred());
                     }
                     break;
             }
         } else {
             System.out.println("Something went wrong");
             System.out.println(((ACKPayload) response).getStatus().toString());
+        }
+    }
+
+    public boolean validateReply(EncryptedPayload ep) {
+
+        boolean correctSignature = ep.verifySignature(this.keyPair.getPrivate());
+        if (! correctSignature) {
+            logger.info("bad sign");
+            return false;
+        } else {
+            logger.info("Received reply correctly!");
+            return true;
         }
     }
 

@@ -9,6 +9,7 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Set;
 
 public class AnnouncementDAO extends DAO<Announcement, BigInteger> {
     public AnnouncementDAO() {
@@ -33,12 +34,13 @@ public class AnnouncementDAO extends DAO<Announcement, BigInteger> {
 
     public boolean safeInsert(Announcement a) {
         List<Announcement> alreadyExisting = findByHash(a.getHash());
-        if (alreadyExisting != null || alreadyExisting.isEmpty()) return false;
+        if (alreadyExisting != null && (!alreadyExisting.isEmpty())) return false;
         this.persist(a);
         return true;
     }
 
-    public boolean allExist(List<Announcement> linked) {
-        return findByHash(linked.stream().map(Announcement::getHash).toArray(String[]::new)).size() == linked.size();
+    public boolean allExist(Set<String> linked) {
+        if (linked.size() == 0) return true;
+        return findByHash(linked.stream().toArray(String[]::new)).size() == linked.size();
     }
 }

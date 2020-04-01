@@ -101,6 +101,7 @@ public class Attacks {
         } catch (ClassCastException cce) {
             cce.printStackTrace();
         }
+
     }
 
     public void MITM_Register() throws IOException, IncorrectSignatureException {
@@ -174,7 +175,7 @@ public class Attacks {
     }
 
     public void reject() {
-        String command = "readgeneral 0";
+        String command = "post hello";
         // user attempts to read
         EncryptedPayload sent = c.doAction(command);
 
@@ -183,6 +184,9 @@ public class Attacks {
         DecryptedPayload changed = new AnnouncementsPayload(original.getSenderKey(), original.getOperation(),
                 original.getTimestamp(), new StatusMessage(Status.InvalidRequest), new ArrayList<>());
 
+        // check that message sent by server matches signature
+        assertTrue(c.getLibrary().validateReply(original, receivedFromServer.getRight()));
+        // check that altered message doesn't match signature
         assertFalse(c.getLibrary().validateReply(changed, receivedFromServer.getRight()));
     }
 

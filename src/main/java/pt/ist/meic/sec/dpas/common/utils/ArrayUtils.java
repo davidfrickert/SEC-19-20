@@ -2,6 +2,7 @@ package pt.ist.meic.sec.dpas.common.utils;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -49,9 +50,14 @@ public class ArrayUtils {
         }
     }
 
+    public static <T> LinkedHashSet<T> bytesToSet(byte[] bytes) {
+        return (LinkedHashSet<T>) bytesToObject(bytes);
+    }
+
     public static <T> List<T> bytesToList(byte[] bytes) {
         return (List<T>) bytesToObject(bytes);
     }
+
 
     public static <T> T bytesToGeneric(byte[] bytes) {
         return (T) bytesToObject(bytes);

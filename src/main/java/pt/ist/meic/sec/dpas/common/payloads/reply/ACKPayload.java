@@ -33,7 +33,7 @@ public class ACKPayload extends DecryptedPayload {
 
     @Override
     public byte[] asBytes() {
-        return ArrayUtils.merge(super.asBytes(), this.status.asBytes());
+        return ArrayUtils.merge(this.status.asBytes(), super.asBytes());
     }
 
     public StatusMessage getStatus() {

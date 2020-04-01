@@ -15,13 +15,14 @@ import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 public class PayloadFactory {
     private final static Logger logger = Logger.getLogger(PayloadFactory.class);
 
     public static DecryptedPayload genRequestPayloadFromOperation(Operation o, byte[] data, PublicKey key, Instant timestamp,
-                                                                  List<BigInteger> linked, PublicKey boardToReadFrom) {
+                                                                  LinkedHashSet<String> linked, PublicKey boardToReadFrom) {
         DecryptedPayload decryptedPayload =  switch (o) {
             case REGISTER -> new RegisterPayload(new String(data) ,key, o, timestamp);
             case POST, POST_GENERAL -> new PostPayload(new String(data), key, o, timestamp, linked);

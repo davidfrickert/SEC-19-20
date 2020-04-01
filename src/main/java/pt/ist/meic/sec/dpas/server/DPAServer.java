@@ -176,10 +176,9 @@ public class DPAServer {
                     // decrypt with server privatekey
                     try {
                         DecryptedPayload dp = ep.decrypt(DPAServer.this.keyPair.getPrivate());
-
-                        boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
-
-
+                        System.out.println(dp);
+                        //boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
+                        boolean correctSignature = ep.verifySignature(DPAServer.this.keyPair.getPrivate());
 
                         if (!correctSignature) {
                             logger.warn("Received " + dp.getOperation() + " with bad signature from " + dp.getSenderKey().hashCode());
@@ -240,12 +239,14 @@ public class DPAServer {
             if (optUB.isPresent()) {
                 UserBoard ub = optUB.get();
                 if (ub.announcementCanBePosted(a)) {
-                    success = announcementDAO.safeInsert(a);
-                    if (success) {
-                        ub.appendAnnouncement(a);
-                        status = new StatusMessage(Status.Success);
-                    }
-                    else status = new StatusMessage(Status.InvalidRequest, "Announcement already exists.");
+                    boolean allExists = announcementDAO.allExist(a.getReferred());
+                    if (allExists) {
+                        success = announcementDAO.safeInsert(a);
+                        if (success) {
+                            ub.appendAnnouncement(a);
+                            status = new StatusMessage(Status.Success);
+                        }  else status = new StatusMessage(Status.InvalidRequest, "Announcement already exists.");
+                    } else status = new StatusMessage(Status.InvalidRequest, "Invalid linked announcement detected, please re-check.");
                 } else status = new StatusMessage(Status.InvalidRequest, "Attempt to write on wrong board.");
             } else status = new StatusMessage(Status.NotFound, "Board for this user not found. Forgot to register?");
 
@@ -256,6 +257,7 @@ public class DPAServer {
         private EncryptedPayloadReply handlePostGeneral(PostPayload p) {
             Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
             boolean success = announcementDAO.safeInsert(a);
+            //boolean allExist = announcementDAO.allExist(p.getLinkedAnnouncements());
             StatusMessage status;
             if (success) {
                 general.appendAnnouncement(a);

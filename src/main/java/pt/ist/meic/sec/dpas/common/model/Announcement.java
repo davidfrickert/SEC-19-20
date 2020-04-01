@@ -10,9 +10,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 public class Announcement implements Serializable {
@@ -31,13 +32,15 @@ public class Announcement implements Serializable {
 
     @Column(columnDefinition = "VARBINARY(4096)")
     private PublicKey creatorId;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name="linked_announcements",
-    joinColumns = @JoinColumn(name = "id", columnDefinition = "BIGINT"))
-    @Column(columnDefinition = "BIGINT")
-    private List<BigInteger> referred;
+    joinColumns = @JoinColumn(name = "id", referencedColumnName = "hash"))
+    @Column(nullable = false)
+    //@Column(columnDefinition = "BIGINT")
+    private Set<String> referred;
 
-    public Announcement(String message, PublicKey creatorId, List<BigInteger> referred, Instant sendTime) {
+    public Announcement(String message, PublicKey creatorId, Set<String> referred, Instant sendTime) {
         this.message = message;
         this.creatorId = creatorId;
         this.referred = referred;
@@ -49,7 +52,7 @@ public class Announcement implements Serializable {
     public Announcement(String message, PublicKey creatorId, Instant sendTime) {
         this.message = message;
         this.creatorId = creatorId;
-        this.referred = new ArrayList<>();
+        this.referred = new HashSet<>();
         this.sendTime = sendTime;
 
         this.hash = calcHash();
@@ -85,7 +88,7 @@ public class Announcement implements Serializable {
         return creatorId;
     }
 
-    public List<BigInteger> getReferred() {
+    public Set<String> getReferred() {
         return referred;
     }
 
