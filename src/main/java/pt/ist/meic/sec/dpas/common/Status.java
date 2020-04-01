@@ -6,5 +6,6 @@ public enum Status {
     Unauthorized,
     NotFound,
     MissingData,
-    InvalidSignature
+    InvalidSignature,
+    NotFresh
 }

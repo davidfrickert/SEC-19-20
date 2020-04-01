@@ -51,6 +51,7 @@ public class DPAServer {
     private DAO<GeneralBoard, Long> generalBoardDAO = new DAO<>(GeneralBoard.class);
     private AnnouncementDAO announcementDAO = new AnnouncementDAO();
     private UserDAO userDAO = new UserDAO();
+    private DAO<PayloadHistory, Long> payloadDAO = new DAO<>(PayloadHistory.class);
 
     public DPAServer() {
         try{
@@ -178,6 +179,8 @@ public class DPAServer {
 
                         boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
 
+
+
                         if (!correctSignature) {
                             logger.warn("Received " + dp.getOperation() + " with bad signature from " + dp.getSenderKey().hashCode());
                             Operation o = dp.getOperation();
@@ -192,14 +195,24 @@ public class DPAServer {
                             outStream.writeObject(e);
                         } else {
                             logger.info("Received " + dp.getOperation() + " with correct signature from " + dp.getSenderKey().hashCode());
-                            // handle regular logic
-                            EncryptedPayload e = switch (dp.getOperation()) {
-                                case REGISTER -> handleRegister((RegisterPayload) dp);
-                                case POST -> handlePost((PostPayload) dp);
-                                case POST_GENERAL -> handlePostGeneral((PostPayload) dp);
-                                case READ -> handleRead((ReadPayload) dp);
-                                case READ_GENERAL -> handleReadGeneral((ReadPayload) dp);
-                            };
+
+                            byte[] signature = ep.getSignature();
+                            Instant timestamp = dp.getTimestamp();
+                            EncryptedPayload e;
+                            boolean fresh = payloadDAO.persist(new PayloadHistory(timestamp, signature));
+
+                            if (fresh) {
+                                e = switch (dp.getOperation()) {
+                                    case REGISTER -> handleRegister((RegisterPayload) dp);
+                                    case POST -> handlePost((PostPayload) dp);
+                                    case POST_GENERAL -> handlePostGeneral((PostPayload) dp);
+                                    case READ -> handleRead((ReadPayload) dp);
+                                    case READ_GENERAL -> handleReadGeneral((ReadPayload) dp);
+                                };
+                            } else {
+                                e = defaultErrorMessage(Status.NotFresh, "Message already received.",
+                                        dp.getOperation(), dp.getSenderKey());
+                            }
                             outStream.writeObject(e);
                         }
                     } catch (MissingDataException e) {

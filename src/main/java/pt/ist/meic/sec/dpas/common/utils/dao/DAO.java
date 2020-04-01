@@ -8,6 +8,7 @@ import org.hibernate.boot.Metadata;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.exception.ConstraintViolationException;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -35,10 +36,16 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
         sf = meta.getSessionFactoryBuilder().build();
     }
 
-    public void persist(final Object o) {
+    public boolean persist(final Object o) {
         this.openSessionWithTransaction();
-        session.save(o);
+        try {
+            session.save(o);
+        } catch (ConstraintViolationException sqe) {
+            this.rollbackAndClose();
+            return false;
+        }
         this.commitAndClose();
+        return true;
     }
 
     public void delete(final Object o) {

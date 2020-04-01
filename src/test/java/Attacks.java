@@ -16,7 +16,9 @@ import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.SocketTimeoutException;
+import java.security.KeyPair;
 import java.util.ArrayList;
 
 import static org.testng.Assert.*;
@@ -71,7 +73,7 @@ public class Attacks {
     }
     public void MITM_Read() throws IOException, IncorrectSignatureException {
 
-        String command = "read 0";
+        String command = "read keys/public/clients/1.crt 0";
         EncryptedPayload sentEncrypted = c.doAction(command);
         c.getEncryptedResponse();
 
@@ -123,19 +125,27 @@ public class Attacks {
      *
      * @throws IOException
      */
-    public void replayREAD() throws IOException, IncorrectSignatureException {
+    public void replayREAD() throws IOException, IncorrectSignatureException, NoSuchFieldException, IllegalAccessException {
 
-        String command = "read 4";
+        String command = "readgeneral 4";
         EncryptedPayload sentEncrypted = c.doAction(command);
-        c.getEncryptedResponse();
+        ACKPayload dp = (ACKPayload) c.getResponseOrRetry(sentEncrypted).getLeft();
 
-        Attacker attacker = new Attacker();
-        try {
-            AnnouncementsPayload p = (AnnouncementsPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.REPLAY, Operation.READ);
-            fail();
-        } catch (ClassCastException | NullPointerException e) {
-            System.out.println("Attacker: Unable to process payload.");
-        }
+        // first message should be fresh (so, -not- NotFresh)
+        assertNotNull(dp);
+        assertNotEquals(dp.getStatus().getStatus(), Status.NotFresh);
+
+        c.getLibrary().write(sentEncrypted);
+
+        // since we don't want to make client keypair public use reflection to access it only for this test
+        Field f = c.getClass().getDeclaredField("keyPair");
+        f.setAccessible(true);
+        KeyPair kp = (KeyPair) f.get(c);
+
+        ACKPayload replayResponse = (ACKPayload) c.getLibrary().receiveReply(kp.getPrivate()).getLeft();
+        // second message should have been marked NotFresh
+        assertEquals(replayResponse.getStatus().getStatus(), Status.NotFresh);
+
     }
 
     public void missingInformation() throws IncorrectSignatureException, IOException {
@@ -143,12 +153,10 @@ public class Attacks {
         EncryptedPayloadRead e = new EncryptedPayloadRead(attacker.getPublicKey(), null, null, null, null, null);
         ACKPayload response = (ACKPayload) attacker.sendInterceptedRequestPayload(e, AttackType.REPLAY, Operation.READ);
         assertEquals(response.getStatus().getStatus(), Status.MissingData);
-
-
     }
 
-    public void drop() throws SocketTimeoutException {
-        String command = "read 0";
+    public void drop()  {
+        String command = "readgeneral 0";
         // user attempts to read
         EncryptedPayload sent = c.doAction(command);
 
@@ -166,7 +174,7 @@ public class Attacks {
     }
 
     public void reject() {
-        String command = "read 0";
+        String command = "readgeneral 0";
         // user attempts to read
         EncryptedPayload sent = c.doAction(command);
 
