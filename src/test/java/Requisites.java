@@ -76,13 +76,18 @@ public class Requisites {
 
     }
 
+
     @Test
     /**
      * Try to read the own posted announcement
      */
-    public void testSimplePostAndRead(){
+    public void testPostAndRead(){
+        String pkClient1 = Base64.getEncoder().encodeToString(c1.getPublicKey().getEncoded());
         String command1 = "post hello";
-        String command2 = "read " + Base64.getEncoder().encodeToString(c1.getPublicKey().getEncoded())  + " 1";
+        String command2 = "post still here man, glad to be alive...";
+        String command3 = "post goodbye folks!";
+        String command4 = "post hello world";
+        String command5 = "read " +  pkClient1 + " 2";
 
         try{
             c1.doAction(command1);
@@ -90,38 +95,36 @@ public class Requisites {
             assertEquals(received1.getStatus().getStatus(), Status.Success);
 
             c1.doAction(command2);
-            AnnouncementsPayload received3 = (AnnouncementsPayload) c1.getResponse().getLeft();
-
-            assertEquals(received3.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
-            assertEquals(received3.getAnnouncements().get(0).getMessage(), "hello ");
-
-        } catch (SocketTimeoutException | IncorrectSignatureException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    /**
-     * Try to read the announcement posted by another user
-     */
-    public void testReadSomeoneElsePost(){
-        String command1 = "post hello";
-        String command2 = "read " + Base64.getEncoder().encodeToString(c1.getPublicKey().getEncoded()) + " 1";
-
-        try{
-            c1.doAction(command1);
-            ACKPayload received1 = (ACKPayload) c1.getResponse().getLeft();
+            ACKPayload received2 = (ACKPayload) c1.getResponse().getLeft();
             assertEquals(received1.getStatus().getStatus(), Status.Success);
 
-            c2.doAction(command2);
-            AnnouncementsPayload received3 = (AnnouncementsPayload) c2.getResponse().getLeft();
+            c1.doAction(command3);
+            ACKPayload received3 = (ACKPayload) c1.getResponse().getLeft();
+            assertEquals(received1.getStatus().getStatus(), Status.Success);
 
-            assertEquals(received3.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
-            assertEquals(received3.getAnnouncements().get(0).getMessage(), "hello ");
+            c2.doAction(command4);
+            ACKPayload received4 = (ACKPayload) c2.getResponse().getLeft();
+            assertEquals(received1.getStatus().getStatus(), Status.Success);
+
+            c1.doAction(command5);
+            AnnouncementsPayload received5 = (AnnouncementsPayload) c1.getResponse().getLeft();
+            assertEquals(received5.getAnnouncements().size(), 2);
+            assertEquals(received5.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
+            assertEquals(received5.getAnnouncements().get(1).getMessage(), "goodbye folks! ");
+            assertEquals(received5.getAnnouncements().get(0).getMessage(),
+                    "still here man, glad to be alive... ");
+
+
+            c2.doAction(command5);
+            AnnouncementsPayload received6 = (AnnouncementsPayload) c2.getResponse().getLeft();
+            assertEquals(received5.getAnnouncements().size(), 2);
+            assertEquals(received5.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
+            assertEquals(received5.getAnnouncements().get(1).getMessage(), "goodbye folks! ");
+            assertEquals(received5.getAnnouncements().get(0).getMessage(),
+                    "still here man, glad to be alive... ");
 
         } catch (SocketTimeoutException | IncorrectSignatureException e) {
             e.printStackTrace();
         }
     }
-
 }
