@@ -3,8 +3,12 @@ package pt.ist.meic.sec.dpas.client;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
+import pt.ist.meic.sec.dpas.common.Status;
+import pt.ist.meic.sec.dpas.common.model.Announcement;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
@@ -72,6 +76,8 @@ public class ClientExample {
     }
 
     public void input(InputStream src) {
+        System.out.println("Welcome to DPAS! Your public key is:" +
+                parsePublicKeyToString(getPublicKey()));
         Scanner sc = new Scanner(src);
         String line;
         String[] split;
@@ -91,6 +97,8 @@ public class ClientExample {
             Pair<DecryptedPayload, EncryptedPayload> response = getResponseOrRetry(sentPayload);
             if (response == null) {
                 System.out.println("Failure sending this request");
+            } else {
+                processResponse(response.getLeft());
             }
             System.out.print(">>");
         }
@@ -221,7 +229,34 @@ public class ClientExample {
         return library;
     }
 
-    public PublicKey parseStringToPublicKey(String s){
+    private void processResponse(DecryptedPayload response){
+        if(((ACKPayload) response).getStatus().getStatus().equals(Status.Success)){
+            switch (response.getOperation()){
+                case REGISTER:
+                    System.out.println("Registered with success!");
+                    break;
+                case POST:
+                case POST_GENERAL:
+                    System.out.println("Message posted with success!");
+                    break;
+                case READ:
+                case READ_GENERAL:
+                    List<Announcement> aList = ((AnnouncementsPayload) response).getAnnouncements();
+                    for(int i = 0; i < aList.size(); i++){
+                        System.out.println("Message: " + aList.get(i).getMessage());
+                        System.out.println("Posted by: " +
+                                parsePublicKeyToString(aList.get(i).getOwnerKey()));
+                        System.out.println("At: " + aList.get(i).getReceivedTime());
+                    }
+                    break;
+            }
+        } else {
+            System.out.println("Something went wrong");
+            System.out.println(((ACKPayload) response).getStatus().toString());
+        }
+    }
+
+    private PublicKey parseStringToPublicKey(String s){
         PublicKey pubKey = null;
         try{
             byte[] publicBytes = Base64.decodeBase64(s);
@@ -236,5 +271,9 @@ public class ClientExample {
 
         return pubKey;
 
+    }
+
+    private String parsePublicKeyToString(PublicKey k){
+        return java.util.Base64.getEncoder().encodeToString(k.getEncoded());
     }
 }
