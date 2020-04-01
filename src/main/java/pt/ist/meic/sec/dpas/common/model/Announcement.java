@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-public class Announcement implements Serializable {
+public class Announcement implements Serializable, Comparable<Announcement> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -117,5 +117,11 @@ public class Announcement implements Serializable {
 
     public String getHash() {
         return this.hash;
+    }
+
+    @Override
+    public int compareTo(Announcement o) {
+        if (receivedTime == null) return 0;
+        return o.receivedTime.compareTo(this.receivedTime);
     }
 }

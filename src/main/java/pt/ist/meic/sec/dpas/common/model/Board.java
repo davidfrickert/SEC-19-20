@@ -42,12 +42,18 @@ public abstract class Board {
     public List<Announcement> getNAnnouncements(ReadPayload r) {
         int n = r.getData().intValue();
         List<Announcement> allAnnouncements = getAnnouncements();
-        System.out.println("Retrieving...");
+
+        // sort descending by date, defined in Announcement compareTo
+        Collections.sort(allAnnouncements);
+
+        if (n > 0 && n <= allAnnouncements.size()) {
+            System.out.println("Retrieving " + n);
+            allAnnouncements = new ArrayList<>(allAnnouncements.subList(0, n));
+        }
+        System.out.println("Retrieved:");
         System.out.println(allAnnouncements.stream().map(Announcement::asString).collect(Collectors.toList()));
-        if (n == 0) return allAnnouncements;
-        System.out.println("Retrieving " + n);
-        if (n > allAnnouncements.size()) return allAnnouncements;
-        return new ArrayList<>(allAnnouncements.subList(allAnnouncements.size() - n, allAnnouncements.size()));
+
+        return allAnnouncements;
     }
 
     public Optional<Announcement> getById(BigInteger Id) {
