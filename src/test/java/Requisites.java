@@ -108,8 +108,8 @@ public class Requisites {
             AnnouncementsPayload received5 = (AnnouncementsPayload) c1.getResponse().getLeft();
             assertEquals(received5.getAnnouncements().size(), 2);
             assertEquals(received5.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
-            assertEquals(received5.getAnnouncements().get(1).getMessage(), "goodbye folks!");
-            assertEquals(received5.getAnnouncements().get(0).getMessage(),
+            assertEquals(received5.getAnnouncements().get(0).getMessage(), "goodbye folks!");
+            assertEquals(received5.getAnnouncements().get(1).getMessage(),
                     "still here man, glad to be alive...");
 
 
@@ -117,8 +117,8 @@ public class Requisites {
             AnnouncementsPayload received6 = (AnnouncementsPayload) c2.getResponse().getLeft();
             assertEquals(received5.getAnnouncements().size(), 2);
             assertEquals(received5.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
-            assertEquals(received5.getAnnouncements().get(1).getMessage(), "goodbye folks!");
-            assertEquals(received5.getAnnouncements().get(0).getMessage(),
+            assertEquals(received5.getAnnouncements().get(0).getMessage(), "goodbye folks!");
+            assertEquals(received5.getAnnouncements().get(1).getMessage(),
                     "still here man, glad to be alive...");
 
         } catch (SocketTimeoutException | IncorrectSignatureException e) {
