@@ -68,6 +68,7 @@ public class Requisites {
             assertEquals(received3.getAnnouncements().get(1).getMessage(), "hello world");
 
         } catch (NullPointerException e) {
+            fail();
             e.printStackTrace();
         }
 
@@ -163,6 +164,7 @@ public class Requisites {
             assertEquals(received11.getStatus().getStatus(), Status.Success);
 
         } catch (SocketTimeoutException | IncorrectSignatureException e) {
+            fail();
             e.printStackTrace();
         }
     }
