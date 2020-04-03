@@ -42,7 +42,6 @@ public class Requisites {
             e.printStackTrace();
         }
 
-
     }
 
     @Test(priority = 2)
@@ -61,11 +60,12 @@ public class Requisites {
             AnnouncementsPayload received3 = (AnnouncementsPayload) c2.doActionAndReceiveReply(command3).get().getLeft();
             assertEquals(received3.getAnnouncements().size(), 2);
 
-            assertEquals(received3.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
-            assertEquals(received3.getAnnouncements().get(0).getMessage(), "hello world");
+            assertEquals(received3.getAnnouncements().get(0).getOwnerKey(), c2.getPublicKey());
+            assertEquals(received3.getAnnouncements().get(0).getMessage(), "hello void");
 
-            assertEquals(received3.getAnnouncements().get(1).getOwnerKey(), c2.getPublicKey());
-            assertEquals(received3.getAnnouncements().get(1).getMessage(), "hello void");
+
+            assertEquals(received3.getAnnouncements().get(1).getOwnerKey(), c1.getPublicKey());
+            assertEquals(received3.getAnnouncements().get(1).getMessage(), "hello world");
 
         } catch (NullPointerException e) {
             e.printStackTrace();

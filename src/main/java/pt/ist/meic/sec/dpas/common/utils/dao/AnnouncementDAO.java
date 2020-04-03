@@ -16,20 +16,28 @@ public class AnnouncementDAO extends DAO<Announcement, BigInteger> {
         super(Announcement.class);
     }
 
-    public List<Announcement> findByHash(String ...hash) {
+    public List<Announcement> findByAttr(String attr, Object ...values) {
         openSessionWithTransaction();
         Session session = getCurrentSession();
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<Announcement> query = cb.createQuery(getType());
         Root<Announcement> root = query.from(getType());
         //Predicate nameMatches = cb.equal(root.get("hash"), hash);
-        Predicate nameMatches = root.get("hash").in(hash);
+        Predicate nameMatches = root.get(attr).in(values);
         query.select(root).where(nameMatches);
 
         List<Announcement> a = session.createQuery(query).getResultList();
         commitAndClose();
         return a;
 
+    }
+
+    public List<Announcement> findByIds(BigInteger ...ids) {
+        return findByAttr("id", ids);
+    }
+
+    public List<Announcement> findByHash(String ...hashes) {
+        return findByAttr("hash", hashes);
     }
 
     public boolean safeInsert(Announcement a) {
@@ -39,8 +47,8 @@ public class AnnouncementDAO extends DAO<Announcement, BigInteger> {
         return true;
     }
 
-    public boolean allExist(Set<String> linked) {
+    public boolean allExist(Set<BigInteger> linked) {
         if (linked.size() == 0) return true;
-        return findByHash(linked.stream().toArray(String[]::new)).size() == linked.size();
+        return findByIds(linked.toArray(new BigInteger[0])).size() == linked.size();
     }
 }
