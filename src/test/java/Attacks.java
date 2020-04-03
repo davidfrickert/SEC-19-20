@@ -9,6 +9,7 @@ import pt.ist.meic.sec.dpas.common.StatusMessage;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.EncryptedPayloadAnnouncements;
 import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRead;
 import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRequest;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
@@ -246,6 +247,29 @@ public class Attacks {
         assertTrue(c.getLibrary().validateReply(original, receivedFromServer.getRight()));
         // check that altered message doesn't match signature
         assertFalse(c.getLibrary().validateReply(changed, receivedFromServer.getRight()));
+    }
+
+    /**
+     * Man in the middle attack on the interaction server -> client
+     * Any attempt on modifying the payload will be detected by the client
+     */
+
+    public void changeAnnouncements() {
+        String command = "readgeneral 0";
+        // user attempts a POST
+        EncryptedPayload sent = c.doAction(command);
+
+        // Decrypted and Encrypted versions of the payload sent by server
+        Pair<DecryptedPayload, EncryptedPayload> receivedFromServer = c.getResponseOrRetry(sent);
+        // Original decrypted payload sent by server
+        // Attacker got in possession of this payload, and, it didn't reach the client
+        EncryptedPayloadAnnouncements e = (EncryptedPayloadAnnouncements) receivedFromServer.getRight();
+        EncryptedPayloadAnnouncements changed = new EncryptedPayloadAnnouncements(e.getSenderKey(), e.getOperation(),
+                e.getTimestamp(), e.getSignature(), e.getStatusMessage(), new byte[] {1, 5, 2, 20});
+        // check that message sent by server matches signature
+        assertTrue(c.validateSignature(e));
+        // check that altered message doesn't match signature
+        assertFalse(c.validateSignature(changed));
     }
 
 }

@@ -185,6 +185,11 @@ public class ClientExample {
         return keyPair.getPublic();
     }
 
+    public boolean validateSignature(EncryptedPayload e)  {
+        return e.verifySignature(this.keyPair.getPrivate());
+    }
+
+
 
     public static void main(String[] args) throws IOException {
 
