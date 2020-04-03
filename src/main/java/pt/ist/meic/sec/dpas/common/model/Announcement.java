@@ -35,12 +35,11 @@ public class Announcement implements Serializable, Comparable<Announcement> {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name="linked_announcements",
-    joinColumns = @JoinColumn(name = "id", referencedColumnName = "hash"))
-    @Column(nullable = false)
-    //@Column(columnDefinition = "BIGINT")
-    private Set<String> referred;
+    joinColumns = @JoinColumn(name = "id", referencedColumnName = "id"))
+    @Column(nullable = false, columnDefinition = "BIGINT")
+    private Set<BigInteger> referred;
 
-    public Announcement(String message, PublicKey creatorId, Set<String> referred, Instant sendTime) {
+    public Announcement(String message, PublicKey creatorId, Set<BigInteger> referred, Instant sendTime) {
         this.message = message;
         this.creatorId = creatorId;
         this.referred = referred;
@@ -88,7 +87,7 @@ public class Announcement implements Serializable, Comparable<Announcement> {
         return creatorId;
     }
 
-    public Set<String> getReferred() {
+    public Set<BigInteger> getReferred() {
         return referred;
     }
 

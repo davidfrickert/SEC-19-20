@@ -8,6 +8,7 @@ import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
+import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
@@ -19,15 +20,15 @@ public class PostPayload extends DecryptedPayload {
     private final static Logger logger = Logger.getLogger(PostPayload.class);
 
     private final String announcement;
-    private final LinkedHashSet<String> linkedAnnouncements;
+    private final LinkedHashSet<BigInteger> linkedAnnouncements;
 
 
-    public Set<String> getLinkedAnnouncements() {
+    public Set<BigInteger> getLinkedAnnouncements() {
         return linkedAnnouncements;
     }
 
 
-    public PostPayload(String announcement, PublicKey auth, Operation op, Instant timestamp, LinkedHashSet<String> links) {
+    public PostPayload(String announcement, PublicKey auth, Operation op, Instant timestamp, LinkedHashSet<BigInteger> links) {
         super(auth, op, timestamp);
         this.announcement = announcement;
         // necessary because weird handling of conversion to bytes...

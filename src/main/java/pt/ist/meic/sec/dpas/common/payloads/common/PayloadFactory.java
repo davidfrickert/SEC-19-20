@@ -22,7 +22,7 @@ public class PayloadFactory {
     private final static Logger logger = Logger.getLogger(PayloadFactory.class);
 
     public static DecryptedPayload genRequestPayloadFromOperation(Operation o, byte[] data, PublicKey key, Instant timestamp,
-                                                                  LinkedHashSet<String> linked, PublicKey boardToReadFrom) {
+                                                                  LinkedHashSet<BigInteger> linked, PublicKey boardToReadFrom) {
         DecryptedPayload decryptedPayload =  switch (o) {
             case REGISTER -> new RegisterPayload(new String(data) ,key, o, timestamp);
             case POST, POST_GENERAL -> new PostPayload(new String(data), key, o, timestamp, linked);

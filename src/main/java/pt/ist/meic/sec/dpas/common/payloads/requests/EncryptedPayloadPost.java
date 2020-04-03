@@ -8,6 +8,7 @@ import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.MissingDataException;
 
+import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
@@ -34,7 +35,7 @@ public class EncryptedPayloadPost extends EncryptedPayloadRequest {
         Operation op = Operation.fromBytes(Crypto.decryptBytes(this.getOperation(), receiverKey));
         Instant timestamp = Instant.parse(new String(Crypto.decryptBytes(this.getTimestamp(), receiverKey)));
         //LinkedHashSet<String> linked = ArrayUtils.bytesToSet(Crypto.decryptBytes(this.linkedAnnouncements, receiverKey));
-        LinkedHashSet<String> linked = SerializationUtils.deserialize(Crypto.decryptBytes(this.linkedAnnouncements, receiverKey));
+        LinkedHashSet<BigInteger> linked = SerializationUtils.deserialize(Crypto.decryptBytes(this.linkedAnnouncements, receiverKey));
         System.out.println(Arrays.hashCode(Crypto.decryptBytes(this.linkedAnnouncements, receiverKey)));
         System.out.println(
                 Arrays.hashCode(

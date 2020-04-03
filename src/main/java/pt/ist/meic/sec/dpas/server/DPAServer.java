@@ -223,8 +223,11 @@ public class DPAServer {
                         }
                     }
                 }
-            } catch (ClassNotFoundException | IOException e) {
-                e.printStackTrace();
+            }
+            catch (ClassNotFoundException | IOException e) {
+                logger.debug("Could not parse read information, tunnel possibly broken. Closing.", e);
+                this.close();
+                this.interrupt();
             }
 
 
