@@ -143,12 +143,12 @@ public class ClientExample {
             case "register" -> library.register(username, keyPair.getPublic(), keyPair.getPrivate());
             case "post" -> {
                 String announcement = getAnnouncement(data);
-                LinkedHashSet<String> prevAnnouncements = getPreviousAnnouncement(data);
+                LinkedHashSet<BigInteger> prevAnnouncements = getPreviousAnnouncement(data);
                 yield library.post(keyPair.getPublic(), announcement, prevAnnouncements, keyPair.getPrivate());
             }
             case "postgeneral" -> {
                 String announcementGeneral = getAnnouncement(data);
-                LinkedHashSet<String> prevAnnouncementsGen = getPreviousAnnouncement(data);
+                LinkedHashSet<BigInteger> prevAnnouncementsGen = getPreviousAnnouncement(data);
                 yield library.postGeneral(keyPair.getPublic(), announcementGeneral, prevAnnouncementsGen, keyPair.getPrivate());
             }
             case "read" -> {
@@ -185,6 +185,11 @@ public class ClientExample {
         return keyPair.getPublic();
     }
 
+    public boolean validateSignature(EncryptedPayload e)  {
+        return e.verifySignature(this.keyPair.getPrivate());
+    }
+
+
 
     public static void main(String[] args) throws IOException {
 
@@ -218,8 +223,8 @@ public class ClientExample {
         return sb.toString();
     }
 
-    private static LinkedHashSet<String> getPreviousAnnouncement(String[] line) {
-        List<String> result = new ArrayList<>();
+    private static LinkedHashSet<BigInteger> getPreviousAnnouncement(String[] line) {
+        List<BigInteger> result = new ArrayList<>();
         boolean found = false;
         for(int i = 1; i < line.length; i++){
             if(line[i].equals("|")){
@@ -228,7 +233,7 @@ public class ClientExample {
             }
 
             if(found){
-                result.add(line[i]);
+                result.add(BigInteger.valueOf(Integer.parseInt(line[i])));
             }
         }
         //return ArrayUtils.bytesToSet(ArrayUtils.objectToBytes(new HashSet<>(result)));

@@ -110,14 +110,14 @@ public class ClientLibrary {
         return sentEncrypted;
     }
 
-    public EncryptedPayload post(PublicKey authKey, String message, LinkedHashSet<String> announcements, PrivateKey signKey) {
+    public EncryptedPayload post(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
         Operation op = Operation.POST;
         EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
         write(sentEncrypted);
         return sentEncrypted;
     }
 
-    public EncryptedPayload postGeneral(PublicKey authKey, String message, LinkedHashSet<String> announcements, PrivateKey signKey) {
+    public EncryptedPayload postGeneral(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
         Operation op = Operation.POST_GENERAL;
         EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
         write(sentEncrypted);
@@ -220,7 +220,7 @@ public class ClientLibrary {
      * @return EncryptedPayload to send
      */
     public EncryptedPayload createEncryptedPostPayload(PublicKey authKey, String announcementMessage,
-                                                       LinkedHashSet<String> linkedAnnouncements, PrivateKey signKey,
+                                                       LinkedHashSet<BigInteger> linkedAnnouncements, PrivateKey signKey,
                                                        Operation op) {
         if (op != Operation.POST && op != Operation.POST_GENERAL) {
             throw new IllegalArgumentException("Wrong Operation for this method " + op.name());

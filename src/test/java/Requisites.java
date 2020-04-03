@@ -42,7 +42,6 @@ public class Requisites {
             e.printStackTrace();
         }
 
-
     }
 
     @Test(priority = 2)
@@ -61,49 +60,56 @@ public class Requisites {
             AnnouncementsPayload received3 = (AnnouncementsPayload) c2.doActionAndReceiveReply(command3).get().getLeft();
             assertEquals(received3.getAnnouncements().size(), 2);
 
-            assertEquals(received3.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
-            assertEquals(received3.getAnnouncements().get(0).getMessage(), "hello world");
+            assertEquals(received3.getAnnouncements().get(0).getOwnerKey(), c2.getPublicKey());
+            assertEquals(received3.getAnnouncements().get(0).getMessage(), "hello void");
 
-            assertEquals(received3.getAnnouncements().get(1).getOwnerKey(), c2.getPublicKey());
-            assertEquals(received3.getAnnouncements().get(1).getMessage(), "hello void");
+
+            assertEquals(received3.getAnnouncements().get(1).getOwnerKey(), c1.getPublicKey());
+            assertEquals(received3.getAnnouncements().get(1).getMessage(), "hello world");
 
         } catch (NullPointerException e) {
+            fail();
             e.printStackTrace();
-            //fail();
         }
 
     }
 
 
     @Test(priority = 3)
-    /**
-     * Try to read the own posted announcement
-     */
     public void testPostAndRead(){
         String pkClient1 = Base64.getEncoder().encodeToString(c1.getPublicKey().getEncoded());
+        String pkClient2 = Base64.getEncoder().encodeToString(c2.getPublicKey().getEncoded());
         String command1 = "post hello";
         String command2 = "post still here man, glad to be alive...";
         String command3 = "post goodbye folks!";
         String command4 = "post hello world";
         String command5 = "read " +  pkClient1 + " 2";
+        String command6 = "read " +  pkClient1 + " 0";
+        String command7 = "read " +  pkClient2 + " 2";
+        String command9 = "post wrong reference | 100000";
 
         try{
+            //Client 1 post
             c1.doAction(command1);
             ACKPayload received1 = (ACKPayload) c1.getResponse().getLeft();
             assertEquals(received1.getStatus().getStatus(), Status.Success);
 
+            //Client 1 post
             c1.doAction(command2);
             ACKPayload received2 = (ACKPayload) c1.getResponse().getLeft();
-            assertEquals(received1.getStatus().getStatus(), Status.Success);
+            assertEquals(received2.getStatus().getStatus(), Status.Success);
 
+            //Client 1 post
             c1.doAction(command3);
             ACKPayload received3 = (ACKPayload) c1.getResponse().getLeft();
-            assertEquals(received1.getStatus().getStatus(), Status.Success);
+            assertEquals(received3.getStatus().getStatus(), Status.Success);
 
+            //Client 2 post
             c2.doAction(command4);
             ACKPayload received4 = (ACKPayload) c2.getResponse().getLeft();
-            assertEquals(received1.getStatus().getStatus(), Status.Success);
+            assertEquals(received4.getStatus().getStatus(), Status.Success);
 
+            //Client 1 read his own last 2 posts
             c1.doAction(command5);
             AnnouncementsPayload received5 = (AnnouncementsPayload) c1.getResponse().getLeft();
             assertEquals(received5.getAnnouncements().size(), 2);
@@ -112,16 +118,53 @@ public class Requisites {
             assertEquals(received5.getAnnouncements().get(1).getMessage(),
                     "still here man, glad to be alive...");
 
-
-            c2.doAction(command5);
+            //Client 2 read Client 1 all posts
+            c2.doAction(command6);
             AnnouncementsPayload received6 = (AnnouncementsPayload) c2.getResponse().getLeft();
-            assertEquals(received5.getAnnouncements().size(), 2);
-            assertEquals(received5.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
-            assertEquals(received5.getAnnouncements().get(0).getMessage(), "goodbye folks!");
-            assertEquals(received5.getAnnouncements().get(1).getMessage(),
+            assertEquals(received6.getAnnouncements().size(), 3);
+            assertEquals(received6.getAnnouncements().get(0).getOwnerKey(), c1.getPublicKey());
+            assertEquals(received6.getAnnouncements().get(0).getMessage(), "goodbye folks!");
+            assertEquals(received6.getAnnouncements().get(1).getMessage(),
                     "still here man, glad to be alive...");
 
+            //Client 1 read more posts than Client 2 actually have
+            c1.doAction(command7);
+            AnnouncementsPayload received7 = (AnnouncementsPayload) c1.getResponse().getLeft();
+            assertEquals(received7.getAnnouncements().size(), 1);
+            assertEquals(received7.getAnnouncements().get(0).getOwnerKey(), c2.getPublicKey());
+            assertEquals(received7.getAnnouncements().get(0).getMessage(), "hello world");
+
+            //Client 2 post reference his other post
+            String c2LastPostID = received7.getAnnouncements().get(0).getId().toString();
+            String command8 = "post references | " + c2LastPostID;
+            c2.doAction(command8);
+            ACKPayload received8 = (ACKPayload) c2.getResponse().getLeft();
+            assertEquals(received8.getStatus().getStatus(), Status.Success);
+
+            //Client 1 reads Client 2 annoucnemt that has a reference to another one
+            c1.doAction(command7);
+            AnnouncementsPayload received9 = (AnnouncementsPayload) c1.getResponse().getLeft();
+            assertEquals(received9.getAnnouncements().size(), 2);
+            assertEquals(received9.getAnnouncements().get(0).getOwnerKey(), c2.getPublicKey());
+            assertEquals(received9.getAnnouncements().get(0).getMessage(), "references");
+            assertEquals(received9.getAnnouncements().get(0).getReferred().iterator().next().intValue(), 6);
+            assertEquals(received9.getAnnouncements().get(1).getMessage(), "hello world");
+
+            //Client 1 posts an invalid announcement because of a wrong reference
+            c1.doAction(command9);
+            ACKPayload received10 = (ACKPayload) c1.getResponse().getLeft();
+            assertEquals(received10.getStatus().getStatus(), Status.InvalidRequest);
+
+            //Client 1 posts a multiple reference announcement with one from him and another from
+            //Client 2
+            String c1LastPostID = received5.getAnnouncements().get(0).getId().toString();
+            String command10 = "post multiple reference | " + c1LastPostID + " " + c2LastPostID;
+            c1.doAction(command10);
+            ACKPayload received11 = (ACKPayload) c1.getResponse().getLeft();
+            assertEquals(received11.getStatus().getStatus(), Status.Success);
+
         } catch (SocketTimeoutException | IncorrectSignatureException e) {
+            fail();
             e.printStackTrace();
         }
     }
