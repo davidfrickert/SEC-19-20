@@ -1,12 +1,10 @@
 package pt.ist.meic.sec.dpas.attacker;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.client.ClientLibrary;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRequest;
+import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
@@ -68,29 +66,32 @@ public class Attacker {
 
     }
 
-    public DecryptedPayload sendInterceptedRequestPayload(EncryptedPayloadRequest intercepted, AttackType type, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
+    public DecryptedPayload sendInterceptedRequestPayload(DecryptedPayload intercepted, AttackType type, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
         return switch (type) {
             case MITM -> mitm(intercepted, operation);
             case REPLAY -> replay(intercepted, operation);
         };
     }
 
-    private DecryptedPayload mitm(EncryptedPayloadRequest intercepted, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
-        // PublicKey auth, byte[] operation, byte[] timestamp, byte[] signature, byte[] message, byte[] linkedAnnouncements
-        EncryptedPayload modifiedByAttacker = new EncryptedPayloadRequest(publicKey, intercepted.getOperation(),
-                intercepted.getTimestamp(), intercepted.getSignature(), intercepted.getMessage());
-        // attempt with a random operation because attacker can't figure out which operation this message is because it's
-        // encrypted..
-        library.write(modifiedByAttacker);
-        Pair<DecryptedPayload, EncryptedPayload> response = library.receiveReply(privateKey);
-        return response.getLeft();
+    public DecryptedPayload buildMissingInformationPayload() {
+        return new ReadPayload(null, getPublicKey(), null, null, null, privateKey);
     }
 
-    private DecryptedPayload replay(EncryptedPayloadRequest intercepted, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
+    private DecryptedPayload mitm(DecryptedPayload intercepted, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
+        // PublicKey auth, byte[] operation, byte[] timestamp, byte[] signature, byte[] message, byte[] linkedAnnouncements
+        intercepted.setSenderKey(this.publicKey);
+        // attempt with a random operation because attacker can't figure out which operation this message is because it's
+        // encrypted..
+        library.write(intercepted);
+        DecryptedPayload response = library.receiveReply();
+        return response;
+    }
+
+    private DecryptedPayload replay(DecryptedPayload intercepted, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
         // edited - this should encrypt with the attacker's key, can't have null encryption key.
         library.write(intercepted);
-        Pair<DecryptedPayload, EncryptedPayload> response = library.receiveReply(privateKey);
-        return response.getLeft();
+        DecryptedPayload response = library.receiveReply();
+        return response;
     }
 
     public PublicKey getPublicKey() {

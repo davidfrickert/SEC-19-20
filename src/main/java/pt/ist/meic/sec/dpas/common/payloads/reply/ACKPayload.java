@@ -5,7 +5,6 @@ import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
-import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -19,11 +18,16 @@ import java.time.Instant;
 public class ACKPayload extends DecryptedPayload {
     private final static Logger logger = Logger.getLogger(ACKPayload.class);
 
-    private final StatusMessage status;
+    private StatusMessage status;
 
     public ACKPayload(PublicKey auth, Operation op, Instant timestamp, StatusMessage status) {
         super(auth, op, timestamp);
         this.status = status;
+    }
+
+    public ACKPayload(PublicKey auth, Operation op, Instant timestamp, StatusMessage status, PrivateKey signKey) {
+        this(auth, op, timestamp, status);
+        computeSignature(signKey);
     }
 
     @Override
@@ -33,27 +37,16 @@ public class ACKPayload extends DecryptedPayload {
 
     @Override
     public byte[] asBytes() {
-        return ArrayUtils.merge(this.status.asBytes(), super.asBytes());
+        byte[] status = getStatus() != null ? getStatus().asBytes() : new byte[0];
+        return ArrayUtils.merge(status, super.asBytes());
     }
 
     public StatusMessage getStatus() {
         return status;
     }
 
-    @Override
-    public EncryptedPayloadReply encrypt(PublicKey receiverKey, PrivateKey senderKey) {
-        PublicKey idKey = this.getSenderKey();
-        byte[] encryptedOperation = Crypto.encryptBytes(this.getOperation().name().getBytes(), receiverKey);
-        byte[] encryptedTimestamp = Crypto.encryptBytes(this.getTimestamp().toString().getBytes(), receiverKey);
-        byte[] encryptedStatusMsg = Crypto.encryptBytes(this.status.asBytes(), receiverKey);
-
-        byte[] originalData = this.asBytes();
-
-        byte[] signature = Crypto.sign(originalData, senderKey);
-
-
-
-        return new EncryptedPayloadReply(idKey, encryptedOperation,encryptedTimestamp, signature, encryptedStatusMsg);
+    public void setStatus(StatusMessage status) {
+        this.status = status;
     }
 
     @Override

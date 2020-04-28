@@ -1,14 +1,15 @@
 package pt.ist.meic.sec.dpas.common.payloads.reply;
 
+import org.apache.commons.lang3.SerializationUtils;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
 import pt.ist.meic.sec.dpas.common.model.Announcement;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
-import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,12 +19,14 @@ import java.util.List;
 
 public class AnnouncementsPayload extends ACKPayload {
 
-    private final List<Announcement> announcements;
+    private List<Announcement> announcements;
 
     public AnnouncementsPayload(PublicKey auth, Operation op, Instant timestamp, StatusMessage status,
-                                List<Announcement> announcements) {
+                                List<Announcement> announcements, PrivateKey signKey) {
         super(auth, op, timestamp, status);
-        this.announcements = announcements;
+        // temporary fix
+        this.announcements = SerializationUtils.deserialize(SerializationUtils.serialize(new ArrayList<>(announcements)));
+        computeSignature(signKey);
     }
 
     @Override
@@ -35,21 +38,8 @@ public class AnnouncementsPayload extends ACKPayload {
         return announcements;
     }
 
-    @Override
-    public EncryptedPayloadReply encrypt(PublicKey receiverKey, PrivateKey senderKey) {
-        PublicKey idKey = this.getSenderKey();
-        byte[] encryptedOperation = Crypto.encryptBytes(this.getOperation().name().getBytes(), receiverKey);
-        byte[] encryptedTimestamp = Crypto.encryptBytes(this.getTimestamp().toString().getBytes(), receiverKey);
-        byte[] encryptedStatusMsg = Crypto.encryptBytes(this.getStatus().asBytes(), receiverKey);
-        byte[] byteAnnouncements = ArrayUtils.objectToBytes(this.announcements);
-        byte[] originalData = this.asBytes();
-
-        byte[] signature = Crypto.sign(originalData, senderKey);
-
-
-
-        return new EncryptedPayloadAnnouncements(idKey, encryptedOperation,encryptedTimestamp, signature, encryptedStatusMsg
-                , byteAnnouncements);
+    public void setAnnouncements(List<Announcement> announcements) {
+        this.announcements = announcements;
     }
 
     @Override

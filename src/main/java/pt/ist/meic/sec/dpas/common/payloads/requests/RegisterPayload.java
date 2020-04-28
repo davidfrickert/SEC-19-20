@@ -3,9 +3,7 @@ package pt.ist.meic.sec.dpas.common.payloads.requests;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
-import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -17,9 +15,10 @@ public class RegisterPayload extends DecryptedPayload {
 
     private final static Logger logger = Logger.getLogger(RegisterPayload.class);
 
-    public RegisterPayload(String username, PublicKey auth, Operation op, Instant timestamp) {
+    public RegisterPayload(String username, PublicKey auth, Operation op, Instant timestamp, PrivateKey signKey) {
         super(auth, op,  timestamp);
         this.username = username;
+        computeSignature(signKey);
     }
 
     public byte[] asBytes() {
@@ -29,20 +28,6 @@ public class RegisterPayload extends DecryptedPayload {
     @Override
     public String getData() {
         return username;
-    }
-
-    @Override
-    public EncryptedPayload encrypt(PublicKey receiverKey, PrivateKey senderKey) {
-        PublicKey idKey = this.getSenderKey();
-        byte[] encryptedOperation = Crypto.encryptBytes(this.getOperation().name().getBytes(), receiverKey);
-        byte[] encryptedTimestamp = Crypto.encryptBytes(this.getTimestamp().toString().getBytes(), receiverKey);
-        byte[] encryptedUsername = Crypto.encryptBytes(this.username.getBytes(), receiverKey);
-
-        byte[] originalData = this.asBytes();
-
-        byte[] signature = Crypto.sign(originalData, senderKey);
-
-        return new EncryptedPayloadRequest(idKey, encryptedOperation, encryptedTimestamp, signature, encryptedUsername);
     }
 
     @Override

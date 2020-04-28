@@ -1,12 +1,10 @@
 package pt.ist.meic.sec.dpas.client;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.model.Announcement;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
@@ -97,12 +95,12 @@ public class ClientExample {
             }
             // sends sentPayload
             try {
-                EncryptedPayload sentPayload = doAction(line);
-                Pair<DecryptedPayload, EncryptedPayload> response = getResponseOrRetry(sentPayload);
+                DecryptedPayload sentPayload = doAction(line);
+                DecryptedPayload response = getResponseOrRetry(sentPayload);
                 if (response == null) {
                     System.out.println("Failure sending this request");
                 } else {
-                    processResponse(response.getLeft());
+                    processResponse(response);
                 }
             } catch (ArrayIndexOutOfBoundsException ie) {
                 System.out.println("wrong syntax");
@@ -111,7 +109,7 @@ public class ClientExample {
         }
     }
 
-    public Pair<DecryptedPayload, EncryptedPayload> getResponseOrRetry(EncryptedPayload e) {
+    public DecryptedPayload getResponseOrRetry(DecryptedPayload e) {
         int max_attempts = 10, attempts = 0;
         while (attempts < max_attempts) {
             try {
@@ -131,15 +129,15 @@ public class ClientExample {
         return null;
     }
 
-    public Optional<Pair<DecryptedPayload, EncryptedPayload>> doActionAndReceiveReply(String command) {
-        EncryptedPayload sent = doAction(command);
+    public Optional<DecryptedPayload> doActionAndReceiveReply(String command) {
+        DecryptedPayload sent = doAction(command);
         return Optional.ofNullable(getResponseOrRetry(sent));
     }
 
-    public EncryptedPayload doAction(String command) {
+    public DecryptedPayload doAction(String command) {
         String[] data = command.split(" ");
         String action = data[0];
-        EncryptedPayload sentPayload = switch (action.toLowerCase()) {
+        DecryptedPayload sentPayload = switch (action.toLowerCase()) {
             case "register" -> library.register(username, keyPair.getPublic(), keyPair.getPrivate());
             case "post" -> {
                 String announcement = getAnnouncement(data);
@@ -170,28 +168,24 @@ public class ClientExample {
 
     /**
      * This method will listen for server answer to the client's requests
-     * @return Pair<DecryptedPayload, EncryptedPayload> Encrypted and Decrypted payload that server sent.
+     * @return Payload sent by server
      */
 
-    public Pair<DecryptedPayload, EncryptedPayload> getResponse() throws SocketTimeoutException, IncorrectSignatureException {
-        return library.receiveReply(this.keyPair.getPrivate());
-    }
-
-    public EncryptedPayload getEncryptedResponse() throws SocketTimeoutException, IncorrectSignatureException {
-        return getResponse().getRight();
+    public DecryptedPayload getResponse() throws SocketTimeoutException, IncorrectSignatureException {
+        return library.receiveReply();
     }
 
     public PublicKey getPublicKey() {
         return keyPair.getPublic();
     }
 
-    public boolean validateSignature(EncryptedPayload e)  {
-        return e.verifySignature(this.keyPair.getPrivate());
+    public boolean validateSignature(DecryptedPayload p)  {
+        return p.verifySignature();
     }
 
 
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
         //program must be initialized with a username
         String username, keyStorePath, ksPassword;
@@ -246,16 +240,10 @@ public class ClientExample {
 
     private void processResponse(DecryptedPayload response){
         if(((ACKPayload) response).getStatus().getStatus().equals(Status.Success)){
-            switch (response.getOperation()){
-                case REGISTER:
-                    System.out.println("Registered with success!");
-                    break;
-                case POST:
-                case POST_GENERAL:
-                    System.out.println("Message posted with success!");
-                    break;
-                case READ:
-                case READ_GENERAL:
+            switch (response.getOperation()) {
+                case REGISTER -> System.out.println("Registered with success!");
+                case POST, POST_GENERAL -> System.out.println("Message posted with success!");
+                case READ, READ_GENERAL -> {
                     List<Announcement> aList = ((AnnouncementsPayload) response).getAnnouncements();
                     System.out.println("Read successful!");
                     System.out.println("Read " + aList.size() + " announcements.");
@@ -267,23 +255,11 @@ public class ClientExample {
                         System.out.println("At: " + announcement.getReceivedTime());
                         System.out.println("Linked: " + announcement.getReferred());
                     }
-                    break;
+                }
             }
         } else {
             System.out.println("Something went wrong");
             System.out.println(((ACKPayload) response).getStatus().toString());
-        }
-    }
-
-    public boolean validateReply(EncryptedPayload ep) {
-
-        boolean correctSignature = ep.verifySignature(this.keyPair.getPrivate());
-        if (! correctSignature) {
-            logger.info("bad sign");
-            return false;
-        } else {
-            logger.info("Received reply correctly!");
-            return true;
         }
     }
 
@@ -294,9 +270,7 @@ public class ClientExample {
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             pubKey = keyFactory.generatePublic(keySpec);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             e.printStackTrace();
         }
 

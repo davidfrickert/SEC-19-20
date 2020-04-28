@@ -1,26 +1,10 @@
 package pt.ist.meic.sec.dpas.common.payloads.common;
 
 import org.apache.log4j.Logger;
-import pt.ist.meic.sec.dpas.common.Operation;
-import pt.ist.meic.sec.dpas.common.Status;
-import pt.ist.meic.sec.dpas.common.StatusMessage;
-import pt.ist.meic.sec.dpas.common.model.Announcement;
-import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
-import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
-import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
-
-import java.math.BigInteger;
-import java.security.PublicKey;
-import java.time.Instant;
-import java.util.LinkedHashSet;
-import java.util.List;
 
 public class PayloadFactory {
     private final static Logger logger = Logger.getLogger(PayloadFactory.class);
-
+    /*
     public static DecryptedPayload genRequestPayloadFromOperation(Operation o, byte[] data, PublicKey key, Instant timestamp,
                                                                   LinkedHashSet<BigInteger> linked, PublicKey boardToReadFrom) {
         DecryptedPayload decryptedPayload =  switch (o) {
@@ -46,4 +30,6 @@ public class PayloadFactory {
         logger.info("Decrypted " + decryptedPayload);
         return decryptedPayload;
     }
+
+     */
 }

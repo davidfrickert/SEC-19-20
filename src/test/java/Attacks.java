@@ -1,4 +1,3 @@
-import org.apache.commons.lang3.tuple.Pair;
 import org.testng.annotations.Test;
 import pt.ist.meic.sec.dpas.attacker.AttackType;
 import pt.ist.meic.sec.dpas.attacker.Attacker;
@@ -6,19 +5,18 @@ import pt.ist.meic.sec.dpas.client.ClientExample;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
+import pt.ist.meic.sec.dpas.common.model.Announcement;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
-import pt.ist.meic.sec.dpas.common.payloads.reply.EncryptedPayloadAnnouncements;
-import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRead;
-import pt.ist.meic.sec.dpas.common.payloads.requests.EncryptedPayloadRequest;
+import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.SocketTimeoutException;
-import java.security.KeyPair;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 
 import static org.testng.Assert.*;
@@ -34,6 +32,7 @@ public class Attacks {
     }
 
     ClientExample c = new ClientExample("test", "keys/private/clients/2.p12", "client2");
+    Attacker attacker = new Attacker();
 
     /**
      * Man in the Middle server detection for a POST operation,
@@ -43,13 +42,12 @@ public class Attacks {
    public void MITM_Post() throws IOException, IncorrectSignatureException {
 
         String command = "post hello world";
-        EncryptedPayload sentEncrypted = c.doAction(command);
-        c.getEncryptedResponse();
+        DecryptedPayload sentEncrypted = c.doAction(command);
+        c.getResponse();
 
-        Attacker attacker = new Attacker();
         try {
             // all replies can be casted to ACKPayload to view status message
-            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST);
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload(sentEncrypted, AttackType.MITM, Operation.POST);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException | SocketTimeoutException | IncorrectSignatureException cce) {
             cce.printStackTrace();
@@ -66,14 +64,12 @@ public class Attacks {
     public void MITM_PostGeneral() throws IncorrectSignatureException, SocketTimeoutException {
 
         String command = "postgeneral hello world";
-        EncryptedPayload sentEncrypted = c.doAction(command);
-        c.getEncryptedResponse();
+        DecryptedPayload sentEncrypted = c.doAction(command);
+        c.getResponse();
 
-
-        Attacker attacker = new Attacker();
         try {
             // all replies can be casted to ACKPayload to view status message
-            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.POST_GENERAL);
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload(sentEncrypted, AttackType.MITM, Operation.POST_GENERAL);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException | SocketTimeoutException | IncorrectSignatureException cce) {
             fail();
@@ -91,13 +87,12 @@ public class Attacks {
 
         String pkClient1 = Base64.getEncoder().encodeToString(c.getPublicKey().getEncoded());
         String command = "read " + pkClient1 + " 0";
-        EncryptedPayload sentEncrypted = c.doAction(command);
-        c.getEncryptedResponse();
+        DecryptedPayload sentEncrypted = c.doAction(command);
+        c.getResponse();
 
-        Attacker attacker = new Attacker();
         try {
             // all replies can be casted to ACKPayload to view status message
-            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.READ);
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload(sentEncrypted, AttackType.MITM, Operation.READ);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException | SocketTimeoutException | IncorrectSignatureException cce) {
             cce.printStackTrace();
@@ -114,15 +109,12 @@ public class Attacks {
     public void MITM_ReadGeneral() throws IncorrectSignatureException, SocketTimeoutException {
 
         String command = "readgeneral 0";
-        EncryptedPayload sentEncrypted = c.doAction(command);
+        DecryptedPayload sentEncrypted = c.doAction(command);
+        c.getResponse();
 
-        c.getEncryptedResponse();
-
-
-        Attacker attacker = new Attacker();
         try {
             // all replies can be casted to ACKPayload to view status message
-            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.READ_GENERAL);
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload(sentEncrypted, AttackType.MITM, Operation.READ_GENERAL);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
         } catch (ClassCastException | SocketTimeoutException | IncorrectSignatureException cce) {
             cce.printStackTrace();
@@ -140,14 +132,12 @@ public class Attacks {
     public void MITM_Register() throws IncorrectSignatureException, SocketTimeoutException {
 
         String command = "register";
-        EncryptedPayload sentEncrypted = c.doAction(command);
-        c.getEncryptedResponse();
+        DecryptedPayload sentEncrypted = c.doAction(command);
+        c.getResponse();
 
-
-        Attacker attacker = new Attacker();
         try {
             // all replies can be casted to ACKPayload to view status message
-            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload((EncryptedPayloadRequest) sentEncrypted, AttackType.MITM, Operation.REGISTER);
+            ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload(sentEncrypted, AttackType.MITM, Operation.REGISTER);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
 
         } catch (ClassCastException | SocketTimeoutException | IncorrectSignatureException cce) {
@@ -162,14 +152,14 @@ public class Attacks {
      * Attempts to send it as-is to server
      * Server detects he already received this payload and returns NotFresh status code.
      */
-    public void replayREAD() throws IOException, IncorrectSignatureException, NoSuchFieldException, IllegalAccessException {
+    public void replayREAD() throws IOException, IncorrectSignatureException {
 
         String command = "readgeneral 4";
 
         // Client sent 'sentEncrypted'
-        EncryptedPayload sentEncrypted = c.doAction(command);
+        DecryptedPayload sentEncrypted = c.doAction(command);
         // server replied to client
-        ACKPayload dp = (ACKPayload) c.getResponseOrRetry(sentEncrypted).getLeft();
+        ACKPayload dp = (ACKPayload) c.getResponseOrRetry(sentEncrypted);
 
         // first message should be fresh (so, -not- NotFresh)
         assertNotNull(dp);
@@ -178,13 +168,8 @@ public class Attacks {
         // attacker - in this test case - it is the same client
         c.getLibrary().write(sentEncrypted);
 
-        // since we don't want to make client keypair public use reflection to access it only for this test
-        Field f = c.getClass().getDeclaredField("keyPair");
-        f.setAccessible(true);
-        KeyPair kp = (KeyPair) f.get(c);
-
         // process server answer
-        ACKPayload replayResponse = (ACKPayload) c.getLibrary().receiveReply(kp.getPrivate()).getLeft();
+        ACKPayload replayResponse = (ACKPayload) c.getLibrary().receiveReply();
         // second message should be marked NotFresh
         assertEquals(replayResponse.getStatus().getStatus(), Status.NotFresh);
 
@@ -196,8 +181,7 @@ public class Attacks {
      */
 
     public void missingInformation() throws IncorrectSignatureException, IOException {
-        Attacker attacker = new Attacker();
-        EncryptedPayloadRead e = new EncryptedPayloadRead(attacker.getPublicKey(), null, null, null, null, null);
+        DecryptedPayload e = attacker.buildMissingInformationPayload();
         ACKPayload response = (ACKPayload) attacker.sendInterceptedRequestPayload(e, AttackType.REPLAY, Operation.READ);
         assertEquals(response.getStatus().getStatus(), Status.MissingData);
     }
@@ -210,15 +194,15 @@ public class Attacks {
     public void drop() throws IncorrectSignatureException, SocketTimeoutException {
         String command = "readgeneral 0";
         // user sends a readgeneral payload to server
-        EncryptedPayload sent = c.doAction(command);
+        DecryptedPayload sent = c.doAction(command);
 
         // consume message to mimic packet loss so that user doesn't get any answer back
-        c.getEncryptedResponse();
+        c.getResponse();
 
         // user is waiting for message
         // if timeout of 15 seconds passes, client retries the request, until eventually it succeeds,
         // or it reaches max attempts
-        Pair<DecryptedPayload, EncryptedPayload> receivedFromServer = c.getResponseOrRetry(sent);
+        DecryptedPayload receivedFromServer = c.getResponseOrRetry(sent);
         assertNotNull(receivedFromServer);
 
     }
@@ -232,21 +216,21 @@ public class Attacks {
     public void reject() {
         String command = "post hello";
         // user attempts a POST
-        EncryptedPayload sent = c.doAction(command);
+        DecryptedPayload sent = c.doAction(command);
 
-        // Decrypted and Encrypted versions of the payload sent by server
-        Pair<DecryptedPayload, EncryptedPayload> receivedFromServer = c.getResponseOrRetry(sent);
         // Original decrypted payload sent by server
         // Attacker got in possession of this payload, and, it didn't reach the client
-        DecryptedPayload original = receivedFromServer.getLeft();
-        // Attacker modifies the payload, changing the status message to an invalid request
-        DecryptedPayload changed = new ACKPayload(original.getSenderKey(), original.getOperation(),
-                original.getTimestamp(), new StatusMessage(Status.InvalidRequest));
+        DecryptedPayload original = c.getResponseOrRetry(sent);
 
         // check that message sent by server matches signature
-        assertTrue(c.getLibrary().validateReply(original, receivedFromServer.getRight()));
+        assertTrue(c.getLibrary().validateReply(original));
+
+        // Attacker modifies the payload, changing the status message to an invalid request
+        ACKPayload changed = (ACKPayload) original;
+        changed.setStatus(new StatusMessage(Status.InvalidRequest));
+
         // check that altered message doesn't match signature
-        assertFalse(c.getLibrary().validateReply(changed, receivedFromServer.getRight()));
+        assertFalse(c.getLibrary().validateReply(changed));
     }
 
     /**
@@ -257,19 +241,24 @@ public class Attacks {
     public void changeAnnouncements() {
         String command = "readgeneral 0";
         // user attempts a POST
-        EncryptedPayload sent = c.doAction(command);
+        DecryptedPayload sent = c.doAction(command);
 
         // Decrypted and Encrypted versions of the payload sent by server
-        Pair<DecryptedPayload, EncryptedPayload> receivedFromServer = c.getResponseOrRetry(sent);
+        DecryptedPayload receivedFromServer = c.getResponseOrRetry(sent);
         // Original decrypted payload sent by server
         // Attacker got in possession of this payload, and, it didn't reach the client
-        EncryptedPayloadAnnouncements e = (EncryptedPayloadAnnouncements) receivedFromServer.getRight();
-        EncryptedPayloadAnnouncements changed = new EncryptedPayloadAnnouncements(e.getSenderKey(), e.getOperation(),
-                e.getTimestamp(), e.getSignature(), e.getStatusMessage(), new byte[] {1, 5, 2, 20});
+
         // check that message sent by server matches signature
-        assertTrue(c.validateSignature(e));
+        assertTrue(c.validateSignature(receivedFromServer));
+
+        AnnouncementsPayload modifiedByAttacker = (AnnouncementsPayload) receivedFromServer;
+        modifiedByAttacker.setAnnouncements(
+            new ArrayList<>(
+                Arrays.asList(new Announcement("i was here", attacker.getPublicKey(), Instant.now()))
+            )
+        );
         // check that altered message doesn't match signature
-        assertFalse(c.validateSignature(changed));
+        assertFalse(c.validateSignature(modifiedByAttacker));
     }
 
 }

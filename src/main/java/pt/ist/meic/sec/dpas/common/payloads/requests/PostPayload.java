@@ -4,9 +4,7 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
-import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
 import java.math.BigInteger;
 import java.security.PrivateKey;
@@ -28,33 +26,17 @@ public class PostPayload extends DecryptedPayload {
     }
 
 
-    public PostPayload(String announcement, PublicKey auth, Operation op, Instant timestamp, LinkedHashSet<BigInteger> links) {
+    public PostPayload(String announcement, PublicKey auth, Operation op, Instant timestamp,
+                       LinkedHashSet<BigInteger> links, PrivateKey signKey) {
         super(auth, op, timestamp);
         this.announcement = announcement;
-        // necessary because weird handling of conversion to bytes...
-        //this.linkedAnnouncements = ArrayUtils.bytesToSet(ArrayUtils.objectToBytes(links));
-        this.linkedAnnouncements = links;
-        //logger.info("Created - " + op + ", " + announcement + ", " + timestamp + ", " + links.toString() + ", " + auth.hashCode());
+        // temporary fix
+        this.linkedAnnouncements = SerializationUtils.deserialize(SerializationUtils.serialize(links));
+        computeSignature(signKey);
     }
 
     public byte[] asBytes() {
         return ArrayUtils.merge(SerializationUtils.serialize(this.linkedAnnouncements),announcement.getBytes(), super.asBytes());
-    }
-
-    @Override
-    public EncryptedPayload encrypt(PublicKey receiverKey, PrivateKey senderKey) {
-        byte[] encryptedData = Crypto.encryptBytes(announcement.getBytes(),  receiverKey);
-        PublicKey idKey = this.getSenderKey();
-        byte[] encryptedOperation = Crypto.encryptBytes(this.getOperation().name().getBytes(), receiverKey);
-        byte[] encryptedLinkedAnnouncements = Crypto.encryptBytes(SerializationUtils.serialize(this.linkedAnnouncements), receiverKey);
-        byte[] encryptedTimestamp = Crypto.encryptBytes(this.getTimestamp().toString().getBytes(), receiverKey);
-
-        byte[] originalData = this.asBytes();
-
-        byte[] signature = Crypto.sign(originalData, senderKey);
-
-        return new EncryptedPayloadPost(idKey, encryptedOperation, encryptedTimestamp, signature, encryptedData,
-                encryptedLinkedAnnouncements);
     }
 
     public String getData() {

@@ -1,10 +1,8 @@
 package pt.ist.meic.sec.dpas.client;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.common.EncryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
@@ -80,7 +78,7 @@ public class ClientLibrary {
         }
     }
 
-    public void write(EncryptedPayload e) {
+    public void write(DecryptedPayload e) {
         boolean done = false;
         int attempts = 0;
         while (!done && attempts < 10) {
@@ -103,132 +101,78 @@ public class ClientLibrary {
         clientSocket.close();
     }
 
-    public EncryptedPayload register(String username, PublicKey key, PrivateKey privateKey) {
-        Operation op = Operation.REGISTER;
-        EncryptedPayload sentEncrypted = createEncryptedRegisterPayload(username, key, privateKey);
+    public DecryptedPayload register(String username, PublicKey key, PrivateKey privateKey) {
+        DecryptedPayload sentEncrypted = createRegisterPayload(username, key, privateKey);
         write(sentEncrypted);
         return sentEncrypted;
     }
 
-    public EncryptedPayload post(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
+    public DecryptedPayload post(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
         Operation op = Operation.POST;
-        EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
+        DecryptedPayload sentEncrypted = createPostPayload(authKey, message, announcements, signKey, op);
         write(sentEncrypted);
         return sentEncrypted;
     }
 
-    public EncryptedPayload postGeneral(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
+    public DecryptedPayload postGeneral(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
         Operation op = Operation.POST_GENERAL;
-        EncryptedPayload sentEncrypted = createEncryptedPostPayload(authKey, message, announcements, signKey, op);
+        DecryptedPayload sentEncrypted = createPostPayload(authKey, message, announcements, signKey, op);
         write(sentEncrypted);
         return sentEncrypted;
     }
 
 
-    public EncryptedPayload read(PublicKey authKey, PublicKey boardKey, BigInteger numberToRead, PrivateKey signKey) {
+    public DecryptedPayload read(PublicKey authKey, PublicKey boardKey, BigInteger numberToRead, PrivateKey signKey) {
         Operation op = Operation.READ;
 
-        EncryptedPayload sentEncrypted = createEncryptedReadPayload(authKey, boardKey, numberToRead, signKey, op);
+        DecryptedPayload sentEncrypted = createReadPayload(authKey, boardKey, numberToRead, signKey, op);
         write(sentEncrypted);
         return sentEncrypted;
-        /*
-        Pair<DecryptedPayload, EncryptedPayload> received = receiveReply(sentEncrypted, op, signKey);
-        DecryptedPayload receivedDecrypted = received.getLeft();
-        EncryptedPayload receivedEncrypted = received.getRight();
-        AnnouncementsPayload announcementsPayload = (AnnouncementsPayload) receivedDecrypted;
-
-        try {
-            logger.info("Got " + announcementsPayload.getAnnouncements().size() + " announcements.");
-
-            for (Announcement a : announcementsPayload.getAnnouncements()) {
-                logger.info("----Announcement----");
-                logger.info(a.getMessage());
-                logger.info(a.getId());
-                logger.info(a.getOwnerKey().hashCode());
-                logger.info(a.getReceivedTime());
-                logger.info(a.getReferred());
-            }
-        }
-        catch (NullPointerException n) {
-            n.printStackTrace();
-        }
-
-        return Pair.of(sentEncrypted, receivedEncrypted);
-
-         */
     }
 
-    public EncryptedPayload readGeneral(BigInteger number, PublicKey authKey, PrivateKey signKey) {
+    public DecryptedPayload readGeneral(BigInteger number, PublicKey authKey, PrivateKey signKey) {
         Operation op = Operation.READ_GENERAL;
 
-        EncryptedPayload sentEncrypted = createEncryptedReadPayload(authKey, null, number, signKey, op);
-        write(sentEncrypted);
-        return sentEncrypted;
-        /*
-        Pair<DecryptedPayload, EncryptedPayload> received = receiveReply(sentEncrypted, op, signKey);
-        DecryptedPayload receivedDecrypted = received.getLeft();
-
-        EncryptedPayload receivedEncrypted = received.getRight();
-
-        AnnouncementsPayload announcementsPayload = (AnnouncementsPayload) receivedDecrypted;
-
-        try {
-            logger.info("Got " + announcementsPayload.getAnnouncements().size() + " announcements.");
-
-            for (Announcement a : announcementsPayload.getAnnouncements()) {
-                logger.info("----Announcement----");
-                logger.info(a.getMessage());
-                logger.info(a.getId());
-                logger.info(a.getOwnerKey().hashCode());
-                logger.info(a.getReceivedTime());
-                logger.info(a.getReferred());
-            }
-        }
-        catch (NullPointerException n) {
-            n.printStackTrace();
-        }
-
-
-        return Pair.of(sentEncrypted, receivedEncrypted);
-
-         */
+        DecryptedPayload sent = createReadPayload(authKey, null, number, signKey, op);
+        write(sent);
+        return sent;
     }
 
     /**
-     * Creates and encrypts a register payload
+     * Creates a register payload
      * @param authKey public key of sender of this payload
      * @param signKey private key of sender of this payload (to sign)
-     * @return EncryptedPayload to send
+     * @return Payload to send
      */
 
-    public EncryptedPayload createEncryptedRegisterPayload(String username, PublicKey authKey, PrivateKey signKey) {
+    public DecryptedPayload createRegisterPayload(String username, PublicKey authKey, PrivateKey signKey) {
         logger.info("Attempting REGISTER");
         Instant time = Instant.now();
         Operation op = Operation.REGISTER;
 
-        return new RegisterPayload(username, authKey, op, time).encrypt(serverKey, signKey);
+        return new RegisterPayload(username, authKey, op, time, signKey);
     }
 
     /**
-     * Creates and encrypts a post/postGeneral payload
+     * Creates a post/postGeneral payload
      *
      * @param authKey public key of sender of this payload
      * @param announcementMessage announcement text
      * @param linkedAnnouncements linked announcements (id's)
      * @param signKey private key of sender of this payload (to sign)
      * @param op operation (must be post or postGeneral)
-     * @return EncryptedPayload to send
+     * @return Payload to send
      */
-    public EncryptedPayload createEncryptedPostPayload(PublicKey authKey, String announcementMessage,
-                                                       LinkedHashSet<BigInteger> linkedAnnouncements, PrivateKey signKey,
-                                                       Operation op) {
+    public DecryptedPayload createPostPayload(PublicKey authKey, String announcementMessage,
+                                              LinkedHashSet<BigInteger> linkedAnnouncements, PrivateKey signKey,
+                                              Operation op) {
         if (op != Operation.POST && op != Operation.POST_GENERAL) {
             throw new IllegalArgumentException("Wrong Operation for this method " + op.name());
         }
         logger.info("Attempting " + op.name());
         Instant time = Instant.now();
-        PostPayload p = new PostPayload(announcementMessage, authKey, op, time, linkedAnnouncements);
-        return p.encrypt(serverKey, signKey);
+        PostPayload p = new PostPayload(announcementMessage, authKey, op, time, linkedAnnouncements, signKey);
+        return p;
     }
 
     /**
@@ -238,33 +182,32 @@ public class ClientLibrary {
      * @param numberToFetch number of announcements to fetch (0 = all or 'n' to fetch 'n' most recent announcements)
      * @param signKey private key of sender of this payload (to sign)
      * @param op operation (must be read or readGeneral)
-     * @return EncryptedPayload to send
+     * @return Payload to send
      */
-    public EncryptedPayload createEncryptedReadPayload(PublicKey authKey, PublicKey boardKey,
-                                                       BigInteger numberToFetch, PrivateKey signKey, Operation op) {
+    public DecryptedPayload createReadPayload(PublicKey authKey, PublicKey boardKey,
+                                              BigInteger numberToFetch, PrivateKey signKey, Operation op) {
         if (op != Operation.READ && op != Operation.READ_GENERAL) {
             throw new IllegalArgumentException("Wrong Operation for this method " + op.name());
         }
         logger.info("Attempting READ");
         Instant time = Instant.now();
-        ReadPayload r = new ReadPayload(numberToFetch, authKey, boardKey, op, time);
+        ReadPayload r = new ReadPayload(numberToFetch, authKey, boardKey, op, time, signKey);
         logger.info("Sending " + r.toString());
-        return r.encrypt(serverKey, signKey);
+        return r;
     }
 
-    public Pair<DecryptedPayload, EncryptedPayload> receiveReply(PrivateKey senderPrivateKey) throws SocketTimeoutException, IncorrectSignatureException {
+    public DecryptedPayload receiveReply() throws SocketTimeoutException, IncorrectSignatureException {
         try {
-            EncryptedPayload ep = (EncryptedPayload) in.readObject();
-            DecryptedPayload dp = ep.decrypt(senderPrivateKey);
-            //boolean validReply = validateReply(dp, ep);
-            boolean validReply = ep.verifySignature(senderPrivateKey);
+            DecryptedPayload dp = (DecryptedPayload) in.readObject();
+
+            boolean validReply = dp.verifySignature();
             if (!validReply) {
                 logger.warn("Bad Signature.");
 
                 throw new IncorrectSignatureException("Received reply with bad signature");
             }
 
-            return Pair.of(dp, ep);
+            return dp;
         } catch (SocketTimeoutException ste) {
             throw ste;
         } catch (IOException | ClassNotFoundException | IllegalStateException | NullPointerException exc) {
@@ -273,8 +216,8 @@ public class ClientLibrary {
         return null;
     }
 
-    public boolean validateReply(DecryptedPayload dp, EncryptedPayload ep) {
-        boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
+    public boolean validateReply(DecryptedPayload dp) {
+        boolean correctSignature = dp.verifySignature();
         if (! correctSignature) {
             logger.info("bad sign");
             return false;
