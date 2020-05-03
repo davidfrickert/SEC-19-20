@@ -11,6 +11,7 @@ import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
+import pt.ist.meic.sec.dpas.server.ServerLauncher;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -24,15 +25,15 @@ import static org.testng.Assert.*;
 @Test
 public class Attacks {
 
-    private DPAServer s = new DPAServer();
+    private DPAServer s = new DPAServer(9876, "keys/private/server/keystore1.p12", "server");
 
     {
         Thread serverThread = new Thread (s::listen);
         serverThread.start();
     }
 
-    ClientExample c = new ClientExample("test", "keys/private/clients/2.p12", "client2");
-    Attacker attacker = new Attacker();
+    ClientExample c = new ClientExample("test", "keys/private/clients/2.p12", "client2", 9876);
+    Attacker attacker = new Attacker(9876);
 
     /**
      * Man in the Middle server detection for a POST operation,

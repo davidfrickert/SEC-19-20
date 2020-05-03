@@ -121,7 +121,6 @@ public class ClientLibrary {
         return sentEncrypted;
     }
 
-
     public DecryptedPayload read(PublicKey authKey, PublicKey boardKey, BigInteger numberToRead, PrivateKey signKey) {
         Operation op = Operation.READ;
 

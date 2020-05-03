@@ -9,6 +9,7 @@ import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
+import pt.ist.meic.sec.dpas.server.ServerLauncher;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,7 +35,7 @@ public class ClientExample {
 
     private String username;
 
-    public ClientExample(String username, String keyPath, String keyStorePassword) {
+    public ClientExample(String username, String keyPath, String keyStorePassword, int serverPort) {
 
         this.username = username;
 
@@ -67,7 +68,12 @@ public class ClientExample {
             throw new IllegalStateException(e);
         }
         library = new ClientLibrary();
-        library.start(host.getHostName(), DPAServer.getPort());
+        library.start(host.getHostName(), serverPort);
+    }
+
+    // get a server port from ServerLauncher if not provided
+    public ClientExample(String username, String keyPath, String keyStorePassword) {
+        this(username, keyPath, keyStorePassword, ServerLauncher.getServerPort());
     }
 
     public void input(InputStream src) {
@@ -189,16 +195,26 @@ public class ClientExample {
 
         //program must be initialized with a username
         String username, keyStorePath, ksPassword;
-        if(args.length != 3){
-            System.out.println("ERROR: Wrong number of parameters.");
-            System.out.println("Correct usage: java ClientExample <username> <keyStore path> <keyStore password>");
-            System.exit(-1);
-        } else {
+        int port;
+        if(args.length == 3){
             username = args[0];
             keyStorePath = args[1];
             ksPassword = args[2];
+
             ClientExample c = new ClientExample(username, keyStorePath, ksPassword);
             c.input(System.in);
+        } else if (args.length == 4){
+            username = args[0];
+            keyStorePath = args[1];
+            ksPassword = args[2];
+            port = Integer.parseInt(args[3]);
+
+            ClientExample c = new ClientExample(username, keyStorePath, ksPassword, port);
+            c.input(System.in);
+        } else {
+            System.out.println("ERROR: Wrong number of parameters.");
+            System.out.println("Correct usage: java ClientExample <username> <keyStore path> <keyStore password> [<server port>]");
+            System.exit(-1);
         }
     }
 

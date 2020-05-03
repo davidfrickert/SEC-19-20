@@ -14,15 +14,15 @@ import static org.testng.Assert.fail;
 
 public class Requisites {
 
-    private DPAServer s = new DPAServer();
+    private DPAServer s = new DPAServer(9876, "keys/private/server/keystore1.p12", "server");
 
     {
         Thread serverThread = new Thread (s::listen);
         serverThread.start();
     }
 
-    ClientExample c1 = new ClientExample("test1", "keys/private/clients/1.p12", "client1");
-    ClientExample c2 = new ClientExample("test2", "keys/private/clients/2.p12", "client2");
+    ClientExample c1 = new ClientExample("test1", "keys/private/clients/1.p12", "client1", 9876);
+    ClientExample c2 = new ClientExample("test2", "keys/private/clients/2.p12", "client2", 9876);
 
     @Test(priority = 1)
     public void testRegister(){

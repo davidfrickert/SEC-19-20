@@ -1,6 +1,7 @@
 package pt.ist.meic.sec.dpas.server;
 
 import org.apache.log4j.Logger;
+import pt.ist.meic.sec.dpas.client.ClientExample;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
@@ -14,6 +15,7 @@ import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.dao.AnnouncementDAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.UserDAO;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.InvalidKeystoreAccessException;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.MissingDataException;
 
 import java.io.FileInputStream;
@@ -34,14 +36,15 @@ import java.util.stream.Collectors;
 
 public class DPAServer {
     private final static Logger logger = Logger.getLogger(DPAServer.class);
-    private static final String KEYSTORE_PATH = "keys/private/server/keystore1.p12";
+//    private static final String KEYSTORE_PATH = "keys/private/server/keystore1.p12";
     private static final String KEYSTORE_ALIAS = "server1";
 
     private Map<PublicKey, UserBoard> allBoards;
     private Board general;
 
     private static ServerSocket server;
-    private static int port = 9876;
+    private int port;
+//    private static int port = 9876;
 
     private KeyPair keyPair;
 
@@ -51,14 +54,15 @@ public class DPAServer {
     private UserDAO userDAO = new UserDAO();
     private DAO<PayloadHistory, Long> payloadDAO = new DAO<>(PayloadHistory.class);
 
-    public DPAServer() {
-        try{
-            FileInputStream is = new FileInputStream(KEYSTORE_PATH);
+    public DPAServer(int serverPort, String keyPath, String keyStorePassword) {
+        try {
+            port = serverPort;
+            FileInputStream is = new FileInputStream(keyPath);
 
             KeyStore keystore = KeyStore.getInstance("PKCS12");
-            keystore.load(is, "server".toCharArray());
+            keystore.load(is, keyStorePassword.toCharArray());
 
-            Key key = keystore.getKey(KEYSTORE_ALIAS, "server".toCharArray());
+            Key key = keystore.getKey(KEYSTORE_ALIAS, keyStorePassword.toCharArray());
             if (key instanceof PrivateKey) {
                 // Get certificate of public key
                 Certificate cert = keystore.getCertificate(KEYSTORE_ALIAS);
@@ -68,6 +72,10 @@ public class DPAServer {
 
                 // Return a key pair
                 this.keyPair = new KeyPair(publicKey, (PrivateKey) key);
+
+            }
+            else {
+                throw new InvalidKeystoreAccessException("Invalid access to keystore.");
             }
         } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | CertificateException | IOException keyStoreException) {
             keyStoreException.printStackTrace();
@@ -137,8 +145,26 @@ public class DPAServer {
     }
 
     public static void main(String[] args) {
-       DPAServer s = new DPAServer();
-       s.listen();
+        int port;
+        String keyStorePath, ksPassword;
+        if(args.length != 3){
+            System.out.println("ERROR: Wrong number of parameters.");
+            System.out.println("Correct usage: java DPAServer <port> <keyStore path> <keyStore password>");
+            System.exit(-1);
+        } else {
+            try {
+                port = Integer.parseInt(args[0]);
+                keyStorePath = args[1];
+                ksPassword = args[2];
+                DPAServer s = new DPAServer(port, keyStorePath, ksPassword);
+                s.listen();
+            } catch (NumberFormatException nfe) {
+                System.out.println("ERROR: Invalid port.");
+                System.out.println("Correct usage: java DPAServer <port> <keyStore path> <keyStore password>");
+                System.exit(-1);
+            }
+        }
+
     }
 
     class ServerThread extends Thread {
@@ -176,6 +202,7 @@ public class DPAServer {
                         System.out.println(dp);
                         //boolean correctSignature = dp.verifySignature(ep, ep.getSenderKey());
                         boolean correctSignature = dp.verifySignature();
+                        if (dp.getOperation() == null) throw new MissingDataException("Operation field is empty.");
 
                         if (!correctSignature) {
                             logger.warn("Received " + dp.getOperation() + " with bad signature from " + dp.getSenderKey().hashCode());
@@ -227,8 +254,6 @@ public class DPAServer {
                 this.close();
                 this.interrupt();
             }
-
-
         }
 
         private DecryptedPayload handlePost(PostPayload p) {
@@ -325,7 +350,7 @@ public class DPAServer {
 
 
 
-    public static int getPort() {
+    public int getPort() {
         return port;
     }
 }

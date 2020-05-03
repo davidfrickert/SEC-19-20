@@ -7,6 +7,7 @@ import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
+import pt.ist.meic.sec.dpas.server.ServerLauncher;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -28,8 +29,7 @@ public class Attacker {
 
     private ClientLibrary library;
 
-    public Attacker() {
-
+    public Attacker(int serverPort) {
         try{
             FileInputStream is = new FileInputStream(KEYSTORE_PATH);
 
@@ -58,12 +58,16 @@ public class Attacker {
         try {
             host = InetAddress.getLocalHost();
             library = new ClientLibrary();
-            library.start(host.getHostName(), DPAServer.getPort());
+            library.start(host.getHostName(), serverPort);
         } catch (UnknownHostException e) {
             e.printStackTrace();
             throw new IllegalStateException(e);
         }
+    }
 
+    // get a server port from ServerLauncher if not provided
+    public Attacker() {
+        this(ServerLauncher.getServerPort());
     }
 
     public DecryptedPayload sendInterceptedRequestPayload(DecryptedPayload intercepted, AttackType type, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
