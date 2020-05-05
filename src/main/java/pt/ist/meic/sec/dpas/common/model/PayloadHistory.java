@@ -10,6 +10,8 @@ public class PayloadHistory implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private PayloadHistory() {}
+
     private Instant timestamp;
     @Column(columnDefinition = "VARBINARY(512)", unique = true)
     private byte[] signature;

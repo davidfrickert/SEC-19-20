@@ -1,6 +1,8 @@
 package pt.ist.meic.sec.dpas.common.model;
 
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
+import pt.ist.meic.sec.dpas.common.utils.HibernateConfig;
+import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,7 +16,12 @@ public class UserBoard extends Board {
     @Column(columnDefinition = "VARBINARY(4096)")
     private PublicKey owner;
 
-    public UserBoard(PublicKey owner) {
+//    public UserBoard(PublicKey owner) {
+//        this.owner = owner;
+//    }
+
+    public UserBoard(PublicKey owner, HibernateConfig config) {
+        super(config);
         this.owner = owner;
     }
 

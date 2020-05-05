@@ -9,6 +9,7 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.exception.ConstraintViolationException;
+import pt.ist.meic.sec.dpas.common.utils.HibernateConfig;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -21,19 +22,15 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
 
     private final static Logger logger = Logger.getLogger(DAO.class);
 
-    private static final SessionFactory sf;
+    private SessionFactory sf;
     private Session session;
     private Transaction transaction;
     private Class<T> type;
 
-    public DAO(Class<T> t) {
+    public DAO(Class<T> t, HibernateConfig config) {
         this.type = t;
-    }
-
-    static {
-        StandardServiceRegistry ssr = new StandardServiceRegistryBuilder().configure("hibernate.cfg.xml").build();
-        Metadata meta = new MetadataSources(ssr).getMetadataBuilder().build();
-        sf = meta.getSessionFactoryBuilder().build();
+        this.sf = config.getSessionFactory();
+        this.session = config.getSession();
     }
 
     public boolean persist(final Object o) {
@@ -54,7 +51,7 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
         this.commitAndClose();
     }
 
-    public static SessionFactory getSf() {
+    public SessionFactory getSf() {
         return sf;
     }
 

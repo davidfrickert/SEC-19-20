@@ -12,6 +12,7 @@ import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
+import pt.ist.meic.sec.dpas.common.utils.HibernateConfig;
 import pt.ist.meic.sec.dpas.common.utils.dao.AnnouncementDAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.UserDAO;
@@ -48,11 +49,13 @@ public class DPAServer {
 
     private KeyPair keyPair;
 
-    private DAO<UserBoard, Long> userBoardDAO = new DAO<>(UserBoard.class);
-    private DAO<GeneralBoard, Long> generalBoardDAO = new DAO<>(GeneralBoard.class);
-    private AnnouncementDAO announcementDAO = new AnnouncementDAO();
-    private UserDAO userDAO = new UserDAO();
-    private DAO<PayloadHistory, Long> payloadDAO = new DAO<>(PayloadHistory.class);
+    private HibernateConfig config;
+
+    private DAO<UserBoard, Long> userBoardDAO;
+    private DAO<GeneralBoard, Long> generalBoardDAO;
+    private AnnouncementDAO announcementDAO;
+    private UserDAO userDAO;
+    private DAO<PayloadHistory, Long> payloadDAO;
 
     public DPAServer(int serverPort, String keyPath, String keyStorePassword) {
         try {
@@ -77,6 +80,15 @@ public class DPAServer {
             else {
                 throw new InvalidKeystoreAccessException("Invalid access to keystore.");
             }
+
+            config = new HibernateConfig(serverPort);
+
+            userBoardDAO = new DAO<>(UserBoard.class, config);
+            generalBoardDAO = new DAO<>(GeneralBoard.class, config);
+            announcementDAO = new AnnouncementDAO(config);
+            userDAO = new UserDAO(config);
+            payloadDAO = new DAO<>(PayloadHistory.class, config);
+
         } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | CertificateException | IOException keyStoreException) {
             keyStoreException.printStackTrace();
             throw new IllegalStateException("Problems with keystore, server not starting.");
@@ -111,7 +123,7 @@ public class DPAServer {
         List<User> users = userDAO.findAll();
         for (User user : users) {
             if (! boards.containsKey(user.getPublicKey())) {
-                UserBoard userBoard = new UserBoard(user.getPublicKey());
+                UserBoard userBoard = new UserBoard(user.getPublicKey(), config);
                 userBoardDAO.persist(userBoard);
                 boards.put(user.getPublicKey(), userBoard);
             }
@@ -123,7 +135,7 @@ public class DPAServer {
     private void initGeneralBoard() {
         List<GeneralBoard> generalBoards = generalBoardDAO.findAll();
         if (generalBoards.isEmpty()) {
-            this.general = new GeneralBoard();
+            this.general = new GeneralBoard(config);
             generalBoardDAO.persist(this.general);
         } else {
             this.general = generalBoards.get(0);
@@ -181,6 +193,7 @@ public class DPAServer {
             try {
                 this.outStream.close();
                 this.inStream.close();
+                config.closeSessionFactory();
             } catch (NullPointerException | IOException e) {
                 e.printStackTrace();
             }
@@ -333,7 +346,7 @@ public class DPAServer {
                 User u = new User(p.getSenderKey(), userName);
                 status = new StatusMessage(Status.Success);
                 userDAO.persist(u);
-                UserBoard userBoard = new UserBoard(u.getPublicKey());
+                UserBoard userBoard = new UserBoard(u.getPublicKey(), config);
                 allBoards.put(u.getPublicKey(), userBoard);
                 userBoardDAO.persist(userBoard);
             }

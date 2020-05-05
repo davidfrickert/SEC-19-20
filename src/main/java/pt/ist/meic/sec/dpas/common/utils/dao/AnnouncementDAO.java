@@ -2,6 +2,7 @@ package pt.ist.meic.sec.dpas.common.utils.dao;
 
 import org.hibernate.Session;
 import pt.ist.meic.sec.dpas.common.model.Announcement;
+import pt.ist.meic.sec.dpas.common.utils.HibernateConfig;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -12,8 +13,8 @@ import java.util.List;
 import java.util.Set;
 
 public class AnnouncementDAO extends DAO<Announcement, BigInteger> {
-    public AnnouncementDAO() {
-        super(Announcement.class);
+    public AnnouncementDAO(HibernateConfig config) {
+        super(Announcement.class, config);
     }
 
     public List<Announcement> findByAttr(String attr, Object ...values) {

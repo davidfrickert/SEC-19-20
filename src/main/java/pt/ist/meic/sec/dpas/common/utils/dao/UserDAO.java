@@ -2,6 +2,7 @@ package pt.ist.meic.sec.dpas.common.utils.dao;
 
 import org.hibernate.Session;
 import pt.ist.meic.sec.dpas.common.model.User;
+import pt.ist.meic.sec.dpas.common.utils.HibernateConfig;
 
 import javax.persistence.NoResultException;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -10,8 +11,8 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
 public class UserDAO extends DAO<User, Integer> {
-    public UserDAO() {
-        super(User.class);
+    public UserDAO(HibernateConfig config) {
+        super(User.class, config);
     }
 
     public User findByName(String attr, Object value) {

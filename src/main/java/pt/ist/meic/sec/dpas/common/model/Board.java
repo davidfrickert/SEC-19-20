@@ -1,7 +1,9 @@
 package pt.ist.meic.sec.dpas.common.model;
 
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
+import pt.ist.meic.sec.dpas.common.utils.HibernateConfig;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
+//import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 
 import javax.persistence.*;
 import java.math.BigInteger;
@@ -15,7 +17,10 @@ public abstract class Board {
     private Long id;
 
     @Transient
-    private DAO<Board, Long> dao = new DAO<>(Board.class);
+    private DAO<Board, Long> dao;
+
+//    @Transient
+//    private DAO<Board, Long> dao = new DAO<>(Board.class);
 
     @MapKey(name = "id")
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
@@ -26,7 +31,11 @@ public abstract class Board {
     )
     private Map<BigInteger, Announcement> announcements = new HashMap<>();
 
-    public Board() { }
+    protected Board() {}
+
+    public Board(HibernateConfig config) {
+        dao = new DAO<>(Board.class, config);
+    }
 
     public Board(Long id, Map<BigInteger, Announcement> announcements) {
         this.id = id;
