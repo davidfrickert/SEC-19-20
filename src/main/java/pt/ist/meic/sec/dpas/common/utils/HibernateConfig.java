@@ -15,7 +15,8 @@ import java.util.Random;
 
 public class HibernateConfig {
 
-    private static ThreadLocal<HibernateConfig> config = null;
+    private static ThreadLocal<HibernateConfig> config = ThreadLocal.withInitial(HibernateConfig::new);
+
     private Configuration configuration;
     private SessionFactory sessionFactory;
     private Session session;
@@ -83,12 +84,11 @@ public class HibernateConfig {
         return this.sessionFactory;
     }
 
-    public static ThreadLocal<HibernateConfig> getInstance() {
-        if (config == null) {
-            config = new ThreadLocal<>();
+    public static synchronized HibernateConfig getInstance() {
+        if (config.get() == null) {
             config.set(new HibernateConfig());
         }
-        return config;
+        return config.get();
     }
 
 //    public static void main(String[] args) {

@@ -183,7 +183,7 @@ public class DPAServer {
             try {
                 this.outStream.close();
                 this.inStream.close();
-                HibernateConfig.getInstance().get().closeSessionFactory();
+                HibernateConfig.getInstance().closeSessionFactory();
             } catch (NullPointerException | IOException e) {
                 e.printStackTrace();
             }

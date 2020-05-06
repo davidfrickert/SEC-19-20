@@ -22,7 +22,7 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
 
     private final static Logger logger = Logger.getLogger(DAO.class);
 
-    private final static HibernateConfig config = HibernateConfig.getInstance().get();
+    private final static HibernateConfig config = HibernateConfig.getInstance();
 
     private Session session;
     private Transaction transaction;
