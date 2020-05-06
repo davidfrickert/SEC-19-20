@@ -1,7 +1,6 @@
 package pt.ist.meic.sec.dpas.server;
 
 import org.apache.log4j.Logger;
-import pt.ist.meic.sec.dpas.client.ClientExample;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
@@ -37,7 +36,7 @@ import java.util.stream.Collectors;
 public class DPAServer {
     private final static Logger logger = Logger.getLogger(DPAServer.class);
 //    private static final String KEYSTORE_PATH = "keys/private/server/keystore1.p12";
-    private static final String KEYSTORE_ALIAS = "server1";
+    private static final String KEY_ALIAS = "server";
 
     private Map<PublicKey, UserBoard> allBoards;
     private Board general;
@@ -62,10 +61,10 @@ public class DPAServer {
             KeyStore keystore = KeyStore.getInstance("PKCS12");
             keystore.load(is, keyStorePassword.toCharArray());
 
-            Key key = keystore.getKey(KEYSTORE_ALIAS, keyStorePassword.toCharArray());
+            Key key = keystore.getKey(KEY_ALIAS, keyStorePassword.toCharArray());
             if (key instanceof PrivateKey) {
                 // Get certificate of public key
-                Certificate cert = keystore.getCertificate(KEYSTORE_ALIAS);
+                Certificate cert = keystore.getCertificate(KEY_ALIAS);
 
                 // Get public key
                 PublicKey publicKey = cert.getPublicKey();
