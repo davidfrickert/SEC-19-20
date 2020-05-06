@@ -22,7 +22,7 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
 
     private final static Logger logger = Logger.getLogger(DAO.class);
 
-    private final static HibernateConfig config = HibernateConfig.getInstance();
+    private static final ThreadLocal<HibernateConfig> config = ThreadLocal.withInitial(HibernateConfig::getInstance);
 
     private Session session;
     private Transaction transaction;
@@ -51,7 +51,7 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
     }
 
     public void openSession() {
-        session = config.getSessionFactory().openSession();
+        session = config.get().getSessionFactory().openSession();
     }
 
     @Override
@@ -104,7 +104,7 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
     }
 
     public Session getCurrentSession() {
-        return config.getSession();
+        return config.get().getSession();
     }
 
     public Class<T> getType() {

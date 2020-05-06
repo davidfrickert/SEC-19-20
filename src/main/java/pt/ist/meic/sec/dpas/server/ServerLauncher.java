@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ServerLauncher {
+    private static ServerLauncher sl = null;
+
     public List<LauncherThread> threadList = new ArrayList<>();
+    public int launched = 0;
 
     public ServerLauncher() {
         LauncherThread t1 = new LauncherThread(8080, "keys/private/server/keystore1.p12", "server");
@@ -24,6 +27,7 @@ public class ServerLauncher {
         try {
             for (LauncherThread t: threadList) {
                 t.start();
+                launched++;
                 Thread.sleep(3000);
             }
         } catch (InterruptedException e) {
@@ -31,40 +35,14 @@ public class ServerLauncher {
         }
     }
 
-//    public ServerLauncher() {
-//        DPAServer s1 = new DPAServer(8080, "keys/private/server/keystore1.p12", "server");
-//        DPAServer s2 = new DPAServer(8081, "keys/private/server/keystore1.p12", "server");
-//        DPAServer s3 = new DPAServer(8082, "keys/private/server/keystore1.p12", "server");
-//        DPAServer s4 = new DPAServer(8083, "keys/private/server/keystore1.p12", "server");
-//        DPAServer s5 = new DPAServer(8084, "keys/private/server/keystore1.p12", "server");
-//        DPAServer s6 = new DPAServer(8085, "keys/private/server/keystore1.p12", "server");
-//        DPAServer s7 = new DPAServer(8086, "keys/private/server/keystore1.p12", "server");
-//        DPAServer s8 = new DPAServer(8087, "keys/private/server/keystore1.p12", "server");
-//        DPAServer s9 = new DPAServer(8088, "keys/private/server/keystore1.p12", "server");
-//        DPAServer s10 = new DPAServer(8089, "keys/private/server/keystore1.p12", "server");
-//
-//        serverList.add(s1);
-//        serverList.add(s2);
-//        serverList.add(s3);
-//        serverList.add(s4);
-//        serverList.add(s5);
-//        serverList.add(s6);
-//        serverList.add(s7);
-//        serverList.add(s8);
-//        serverList.add(s9);
-//        serverList.add(s10);
-//
-//    }
-//
-//    public void start() {
-//        for (DPAServer s : serverList) {
-//            {
-//                Thread serverThread = new Thread (s::listen);
-//                serverThread.start();
-//                threadList.add(serverThread);
-//            }
-//        }
-//    }
+    public static ServerLauncher launchInstance() {
+        sl = new ServerLauncher();
+        return sl;
+    }
+
+    public static ServerLauncher getInstance() {
+        return sl;
+    }
 
     class LauncherThread extends Thread {
 
@@ -88,7 +66,7 @@ public class ServerLauncher {
 
     public static void main(String[] args) {
 
-        ServerLauncher sl = new ServerLauncher();
+        ServerLauncher sl = ServerLauncher.launchInstance();
         sl.start();
     }
 }

@@ -4,6 +4,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import pt.ist.meic.sec.dpas.common.model.*;
+import pt.ist.meic.sec.dpas.server.ServerLauncher;
 
 import javax.xml.transform.Result;
 import java.sql.Connection;
@@ -16,6 +17,7 @@ import java.util.Random;
 public class HibernateConfig {
 
     private static ThreadLocal<HibernateConfig> config = ThreadLocal.withInitial(HibernateConfig::new);
+    private static ServerLauncher sl = ServerLauncher.getInstance();
 
     private Configuration configuration;
     private SessionFactory sessionFactory;
@@ -23,28 +25,13 @@ public class HibernateConfig {
 
     private HibernateConfig() {
 
-// // Generate sequential name        
-//        String url = "jdbc:mysql://localhost/";
-//        String user = "root";
-//        String password = "root";
-//        int db_int = 0;
-//
-//        try {
-//            Connection con = DriverManager.getConnection(url, user, password);
-//            ResultSet rs = con.getMetaData().getCatalogs();
-//            while (rs.next()) {
-//                String catalogs = rs.getString(1);
-//                if (catalogs.equals("dpas"+db_int)) {
-//                    db_int++;
-//                }
-//            }
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
-
-// Generate random name
-        Random rand = new Random();
-        int db_int = rand.nextInt(10000);
+        int db_int;
+        if (sl != null) {
+            db_int = sl.launched;
+        }
+        else {
+            db_int = 0;
+        }
 
         configuration = new Configuration();
         Properties properties = new Properties();
