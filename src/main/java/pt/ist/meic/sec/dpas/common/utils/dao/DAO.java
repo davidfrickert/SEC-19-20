@@ -9,6 +9,7 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.exception.ConstraintViolationException;
+import pt.ist.meic.sec.dpas.common.utils.HibernateConfig;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -21,19 +22,14 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
 
     private final static Logger logger = Logger.getLogger(DAO.class);
 
-    private static final SessionFactory sf;
+    private static final ThreadLocal<HibernateConfig> config = ThreadLocal.withInitial(HibernateConfig::getInstance);
+
     private Session session;
     private Transaction transaction;
     private Class<T> type;
 
     public DAO(Class<T> t) {
         this.type = t;
-    }
-
-    static {
-        StandardServiceRegistry ssr = new StandardServiceRegistryBuilder().configure("hibernate.cfg.xml").build();
-        Metadata meta = new MetadataSources(ssr).getMetadataBuilder().build();
-        sf = meta.getSessionFactoryBuilder().build();
     }
 
     public boolean persist(final Object o) {
@@ -54,12 +50,8 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
         this.commitAndClose();
     }
 
-    public static SessionFactory getSf() {
-        return sf;
-    }
-
     public void openSession() {
-        session = sf.openSession();
+        session = config.get().getSessionFactory().openSession();
     }
 
     @Override
@@ -97,7 +89,7 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
             logger.info("Attempt to create new session with a transaction still active... Forgot to close transaction?");
         }
         if (session == null || !session.isOpen())
-            session = sf.openSession();
+            openSession();
         transaction = session.beginTransaction();
     }
 
@@ -112,7 +104,7 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
     }
 
     public Session getCurrentSession() {
-        return this.session;
+        return config.get().getSession();
     }
 
     public Class<T> getType() {

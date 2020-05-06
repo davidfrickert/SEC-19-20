@@ -143,7 +143,6 @@ public class ClientLibrary {
      * @param signKey private key of sender of this payload (to sign)
      * @return Payload to send
      */
-
     public DecryptedPayload createRegisterPayload(String username, PublicKey authKey, PrivateKey signKey) {
         logger.info("Attempting REGISTER");
         Instant time = Instant.now();

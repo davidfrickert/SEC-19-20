@@ -26,7 +26,7 @@ public abstract class Board {
     )
     private Map<BigInteger, Announcement> announcements = new HashMap<>();
 
-    public Board() { }
+    protected Board() {}
 
     public Board(Long id, Map<BigInteger, Announcement> announcements) {
         this.id = id;

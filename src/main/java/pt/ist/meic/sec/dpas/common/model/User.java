@@ -21,7 +21,7 @@ public class User implements Serializable {
     @Column(unique = true)
     private String username;
 
-    public User(){}
+    private User() {}
 
     public User(PublicKey publicKey, String username){
         this.username = username;

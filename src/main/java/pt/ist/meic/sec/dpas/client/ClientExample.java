@@ -71,11 +71,6 @@ public class ClientExample {
         library.start(host.getHostName(), serverPort);
     }
 
-    // get a server port from ServerLauncher if not provided
-    public ClientExample(String username, String keyPath, String keyStorePassword) {
-        this(username, keyPath, keyStorePassword, ServerLauncher.getServerPort());
-    }
-
     public void input(InputStream src) {
         System.out.println("Welcome to DPAS! Your public key is:" +
                 parsePublicKeyToString(getPublicKey()));
@@ -189,21 +184,12 @@ public class ClientExample {
         return p.verifySignature();
     }
 
-
-
     public static void main(String[] args) {
 
         //program must be initialized with a username
         String username, keyStorePath, ksPassword;
         int port;
-        if(args.length == 3){
-            username = args[0];
-            keyStorePath = args[1];
-            ksPassword = args[2];
-
-            ClientExample c = new ClientExample(username, keyStorePath, ksPassword);
-            c.input(System.in);
-        } else if (args.length == 4){
+        if (args.length == 4){
             username = args[0];
             keyStorePath = args[1];
             ksPassword = args[2];
@@ -213,7 +199,7 @@ public class ClientExample {
             c.input(System.in);
         } else {
             System.out.println("ERROR: Wrong number of parameters.");
-            System.out.println("Correct usage: java ClientExample <username> <keyStore path> <keyStore password> [<server port>]");
+            System.out.println("Correct usage: java ClientExample <username> <keyStore path> <keyStore password> <server port>");
             System.exit(-1);
         }
     }

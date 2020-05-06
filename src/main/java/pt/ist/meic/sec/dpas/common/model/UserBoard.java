@@ -1,6 +1,8 @@
 package pt.ist.meic.sec.dpas.common.model;
 
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
+import pt.ist.meic.sec.dpas.common.utils.HibernateConfig;
+import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

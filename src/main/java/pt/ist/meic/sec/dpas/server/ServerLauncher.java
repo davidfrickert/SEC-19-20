@@ -4,24 +4,69 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ServerLauncher {
-    private static List<DPAServer> serverList = new ArrayList<>();
-    private static List<Thread> threadList = new ArrayList<>();
+    private static ServerLauncher sl = null;
 
-    public static void main(String[] args) {
-        DPAServer s1 = new DPAServer(9876, "keys/private/server/keystore1.p12", "server");
-        serverList.add(s1);
+    public List<LauncherThread> threadList = new ArrayList<>();
+    public int launched = 0;
 
-        for (DPAServer s : serverList) {
-            {
-                Thread serverThread = new Thread (s::listen);
-                serverThread.start();
-                threadList.add(serverThread);
+    public ServerLauncher() {
+        LauncherThread t1 = new LauncherThread(8080, "keys/private/server/keystore1.p12", "server");
+        LauncherThread t2 = new LauncherThread(8081, "keys/private/server/keystore1.p12", "server");
+        LauncherThread t3 = new LauncherThread(8082, "keys/private/server/keystore1.p12", "server");
+        LauncherThread t4 = new LauncherThread(8083, "keys/private/server/keystore1.p12", "server");
+        LauncherThread t5 = new LauncherThread(8084, "keys/private/server/keystore1.p12", "server");
+
+        threadList.add(t1);
+        threadList.add(t2);
+        threadList.add(t3);
+        threadList.add(t4);
+        threadList.add(t5);
+    }
+
+    public void start() {
+        try {
+            for (LauncherThread t: threadList) {
+                t.start();
+                launched++;
+                Thread.sleep(3000);
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
-    // Return a server port (first one working?)
-    public static int getServerPort() {
-        return serverList.get(1).getPort();
+    public static ServerLauncher launchInstance() {
+        sl = new ServerLauncher();
+        return sl;
+    }
+
+    public static ServerLauncher getInstance() {
+        return sl;
+    }
+
+    class LauncherThread extends Thread {
+
+        public int port;
+        public String path;
+        public String password;
+        public DPAServer s;
+        public Thread t;
+
+        public LauncherThread(int serverPort, String keyPath, String keyStorePassword) {
+            this.port = serverPort;
+            this.path = keyPath;
+            this.password = keyStorePassword;
+        }
+        public void run() {
+            s = new DPAServer(port, path, password);
+            t = new Thread (s::listen);
+            t.start();
+        }
+    }
+
+    public static void main(String[] args) {
+
+        ServerLauncher sl = ServerLauncher.launchInstance();
+        sl.start();
     }
 }

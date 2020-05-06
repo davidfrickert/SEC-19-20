@@ -65,11 +65,6 @@ public class Attacker {
         }
     }
 
-    // get a server port from ServerLauncher if not provided
-    public Attacker() {
-        this(ServerLauncher.getServerPort());
-    }
-
     public DecryptedPayload sendInterceptedRequestPayload(DecryptedPayload intercepted, AttackType type, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
         return switch (type) {
             case MITM -> mitm(intercepted, operation);
