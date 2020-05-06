@@ -22,15 +22,14 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
 
     private final static Logger logger = Logger.getLogger(DAO.class);
 
-    private SessionFactory sf;
+    private final static HibernateConfig config = HibernateConfig.getInstance().get();
+
     private Session session;
     private Transaction transaction;
     private Class<T> type;
 
-    public DAO(Class<T> t, HibernateConfig config) {
+    public DAO(Class<T> t) {
         this.type = t;
-        this.sf = config.getSessionFactory();
-        this.session = config.getSession();
     }
 
     public boolean persist(final Object o) {
@@ -51,12 +50,8 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
         this.commitAndClose();
     }
 
-    public SessionFactory getSf() {
-        return sf;
-    }
-
     public void openSession() {
-        session = sf.openSession();
+        session = config.getSessionFactory().openSession();
     }
 
     @Override
@@ -94,7 +89,7 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
             logger.info("Attempt to create new session with a transaction still active... Forgot to close transaction?");
         }
         if (session == null || !session.isOpen())
-            session = sf.openSession();
+            openSession();
         transaction = session.beginTransaction();
     }
 
@@ -109,7 +104,7 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
     }
 
     public Session getCurrentSession() {
-        return this.session;
+        return config.getSession();
     }
 
     public Class<T> getType() {

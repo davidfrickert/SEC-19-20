@@ -16,12 +16,7 @@ public class UserBoard extends Board {
     @Column(columnDefinition = "VARBINARY(4096)")
     private PublicKey owner;
 
-//    public UserBoard(PublicKey owner) {
-//        this.owner = owner;
-//    }
-
-    public UserBoard(PublicKey owner, HibernateConfig config) {
-        super(config);
+    public UserBoard(PublicKey owner) {
         this.owner = owner;
     }
 

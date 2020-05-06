@@ -13,9 +13,7 @@ import java.util.List;
 import java.util.Set;
 
 public class AnnouncementDAO extends DAO<Announcement, BigInteger> {
-    public AnnouncementDAO(HibernateConfig config) {
-        super(Announcement.class, config);
-    }
+    public AnnouncementDAO() { super(Announcement.class); }
 
     public List<Announcement> findByAttr(String attr, Object ...values) {
         openSessionWithTransaction();

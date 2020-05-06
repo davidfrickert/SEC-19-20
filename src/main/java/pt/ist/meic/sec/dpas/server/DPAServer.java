@@ -1,7 +1,6 @@
 package pt.ist.meic.sec.dpas.server;
 
 import org.apache.log4j.Logger;
-import pt.ist.meic.sec.dpas.client.ClientExample;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.StatusMessage;
@@ -45,17 +44,16 @@ public class DPAServer {
 
     private static ServerSocket server;
     private int port;
-//    private static int port = 9876;
 
     private KeyPair keyPair;
 
-    private HibernateConfig config;
+//    private static final HibernateConfig config = HibernateConfig.getInstance();
 
-    private DAO<UserBoard, Long> userBoardDAO;
-    private DAO<GeneralBoard, Long> generalBoardDAO;
-    private AnnouncementDAO announcementDAO;
-    private UserDAO userDAO;
-    private DAO<PayloadHistory, Long> payloadDAO;
+    private DAO<UserBoard, Long> userBoardDAO = new DAO<>(UserBoard.class);
+    private DAO<GeneralBoard, Long> generalBoardDAO = new DAO<>(GeneralBoard.class);
+    private AnnouncementDAO announcementDAO = new AnnouncementDAO();
+    private UserDAO userDAO = new UserDAO();
+    private DAO<PayloadHistory, Long> payloadDAO = new DAO<>(PayloadHistory.class);
 
     public DPAServer(int serverPort, String keyPath, String keyStorePassword) {
         try {
@@ -80,14 +78,6 @@ public class DPAServer {
             else {
                 throw new InvalidKeystoreAccessException("Invalid access to keystore.");
             }
-
-            config = new HibernateConfig(serverPort);
-
-            userBoardDAO = new DAO<>(UserBoard.class, config);
-            generalBoardDAO = new DAO<>(GeneralBoard.class, config);
-            announcementDAO = new AnnouncementDAO(config);
-            userDAO = new UserDAO(config);
-            payloadDAO = new DAO<>(PayloadHistory.class, config);
 
         } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | CertificateException | IOException keyStoreException) {
             keyStoreException.printStackTrace();
@@ -123,7 +113,7 @@ public class DPAServer {
         List<User> users = userDAO.findAll();
         for (User user : users) {
             if (! boards.containsKey(user.getPublicKey())) {
-                UserBoard userBoard = new UserBoard(user.getPublicKey(), config);
+                UserBoard userBoard = new UserBoard(user.getPublicKey());
                 userBoardDAO.persist(userBoard);
                 boards.put(user.getPublicKey(), userBoard);
             }
@@ -135,7 +125,7 @@ public class DPAServer {
     private void initGeneralBoard() {
         List<GeneralBoard> generalBoards = generalBoardDAO.findAll();
         if (generalBoards.isEmpty()) {
-            this.general = new GeneralBoard(config);
+            this.general = new GeneralBoard();
             generalBoardDAO.persist(this.general);
         } else {
             this.general = generalBoards.get(0);
@@ -193,7 +183,7 @@ public class DPAServer {
             try {
                 this.outStream.close();
                 this.inStream.close();
-                config.closeSessionFactory();
+                HibernateConfig.getInstance().get().closeSessionFactory();
             } catch (NullPointerException | IOException e) {
                 e.printStackTrace();
             }
@@ -346,7 +336,7 @@ public class DPAServer {
                 User u = new User(p.getSenderKey(), userName);
                 status = new StatusMessage(Status.Success);
                 userDAO.persist(u);
-                UserBoard userBoard = new UserBoard(u.getPublicKey(), config);
+                UserBoard userBoard = new UserBoard(u.getPublicKey());
                 allBoards.put(u.getPublicKey(), userBoard);
                 userBoardDAO.persist(userBoard);
             }
