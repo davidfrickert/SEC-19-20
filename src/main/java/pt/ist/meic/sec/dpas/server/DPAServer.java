@@ -11,7 +11,6 @@ import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
-import pt.ist.meic.sec.dpas.common.utils.HibernateConfig;
 import pt.ist.meic.sec.dpas.common.utils.dao.AnnouncementDAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.UserDAO;
@@ -37,17 +36,16 @@ import java.util.stream.Collectors;
 public class DPAServer {
     private final static Logger logger = Logger.getLogger(DPAServer.class);
 //    private static final String KEYSTORE_PATH = "keys/private/server/keystore1.p12";
-    private static final String KEYSTORE_ALIAS = "server1";
+    private static final String KEY_ALIAS = "server";
 
     private Map<PublicKey, UserBoard> allBoards;
     private Board general;
 
     private static ServerSocket server;
     private int port;
+//    private static int port = 9876;
 
     private KeyPair keyPair;
-
-//    private static final HibernateConfig config = HibernateConfig.getInstance();
 
     private DAO<UserBoard, Long> userBoardDAO = new DAO<>(UserBoard.class);
     private DAO<GeneralBoard, Long> generalBoardDAO = new DAO<>(GeneralBoard.class);
@@ -63,10 +61,10 @@ public class DPAServer {
             KeyStore keystore = KeyStore.getInstance("PKCS12");
             keystore.load(is, keyStorePassword.toCharArray());
 
-            Key key = keystore.getKey(KEYSTORE_ALIAS, keyStorePassword.toCharArray());
+            Key key = keystore.getKey(KEY_ALIAS, keyStorePassword.toCharArray());
             if (key instanceof PrivateKey) {
                 // Get certificate of public key
-                Certificate cert = keystore.getCertificate(KEYSTORE_ALIAS);
+                Certificate cert = keystore.getCertificate(KEY_ALIAS);
 
                 // Get public key
                 PublicKey publicKey = cert.getPublicKey();
@@ -78,7 +76,6 @@ public class DPAServer {
             else {
                 throw new InvalidKeystoreAccessException("Invalid access to keystore.");
             }
-
         } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | CertificateException | IOException keyStoreException) {
             keyStoreException.printStackTrace();
             throw new IllegalStateException("Problems with keystore, server not starting.");
@@ -183,7 +180,6 @@ public class DPAServer {
             try {
                 this.outStream.close();
                 this.inStream.close();
-                HibernateConfig.getInstance().closeSessionFactory();
             } catch (NullPointerException | IOException e) {
                 e.printStackTrace();
             }
