@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
+import java.util.Arrays;
 
 public abstract class DecryptedPayload implements Serializable {
 
@@ -15,6 +16,7 @@ public abstract class DecryptedPayload implements Serializable {
     private final Operation operation;
     private final Instant timestamp;
     private byte[] signature;
+    private int msgId = -1;
 
     public DecryptedPayload(PublicKey auth, Operation op, Instant timestamp) {
         this.senderKey = auth;
@@ -59,4 +61,19 @@ public abstract class DecryptedPayload implements Serializable {
         return Crypto.verify(asBytes(), getSignature(), senderKey);
     }
 
+    public int getMsgId() {
+        return msgId;
+    }
+
+    public void setMsgId(int msgId) {
+        this.msgId = msgId;
+    }
+
+    public boolean isRead() {
+        return Arrays.asList(Operation.READ, Operation.READ_GENERAL).contains(operation);
+    }
+
+    public boolean isWrite() {
+        return Arrays.asList(Operation.POST, Operation.POST_GENERAL, Operation.REGISTER).contains(operation);
+    }
 }
