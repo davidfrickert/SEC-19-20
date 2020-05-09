@@ -16,7 +16,7 @@ public abstract class DecryptedPayload implements Serializable {
     private final Operation operation;
     private final Instant timestamp;
     private byte[] signature;
-    private int msgId = -1;
+    private Integer msgId = -1;
 
     public DecryptedPayload(PublicKey auth, Operation op, Instant timestamp) {
         this.senderKey = auth;
@@ -30,7 +30,7 @@ public abstract class DecryptedPayload implements Serializable {
         byte[] senderKey = getSenderKey() != null ? getSenderKey().getEncoded() : new byte[0];
         byte[] operation = getOperation() != null ? getOperation().name().getBytes() : new byte[0];
         byte[] timestamp = getTimestamp() != null ? getTimestamp().toString().getBytes() : new byte[0];
-        return ArrayUtils.merge(senderKey, operation, timestamp);
+        return ArrayUtils.merge(senderKey, operation, timestamp, ArrayUtils.objectToBytes(msgId));
     }
 
     public PublicKey getSenderKey() {
