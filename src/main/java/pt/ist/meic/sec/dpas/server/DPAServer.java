@@ -11,6 +11,7 @@ import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
+import pt.ist.meic.sec.dpas.common.utils.Crypto;
 import pt.ist.meic.sec.dpas.common.utils.dao.AnnouncementDAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.UserDAO;
@@ -220,9 +221,14 @@ public class DPAServer {
                                 case READ_GENERAL:
                                     yield defaultErrorMessage(Status.InvalidSignature, "Invalid Signature.", o, dp.getSenderKey());
                             };
+                            e.setMsgId(dp.getMsgId());
                             outStream.writeObject(e);
                         } else {
                             logger.info("Received " + dp.getOperation() + " with correct signature from " + dp.getSenderKey().hashCode());
+
+                            //Bizantine signature verification
+                            boolean bizantineSignature;
+                            //bizantineSignature = Crypto.verify(value.getBytes(), signature, dp.getSenderKey())
 
                             byte[] signature = dp.getSignature();
                             Instant timestamp = dp.getTimestamp();
@@ -241,6 +247,7 @@ public class DPAServer {
                                 e = defaultErrorMessage(Status.NotFresh, "Message already received.",
                                         dp.getOperation(), dp.getSenderKey());
                             }
+                            e.setMsgId(dp.getMsgId());
                             outStream.writeObject(e);
                         }
                     } catch (MissingDataException e) {
@@ -328,6 +335,7 @@ public class DPAServer {
         }
 
         private DecryptedPayload handleRegister(RegisterPayload p){
+
             String userName = p.getData();
             StatusMessage status;
             if (userDAO.exists("username", userName)) {
