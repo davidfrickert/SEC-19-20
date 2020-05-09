@@ -4,15 +4,10 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import pt.ist.meic.sec.dpas.common.model.*;
+import pt.ist.meic.sec.dpas.server.DPAServer;
 import pt.ist.meic.sec.dpas.server.ServerLauncher;
 
-import javax.xml.transform.Result;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Properties;
-import java.util.Random;
 
 public class HibernateConfig {
 
@@ -25,13 +20,7 @@ public class HibernateConfig {
 
     private HibernateConfig() {
 
-        int db_int;
-        if (sl != null) {
-            db_int = sl.launched;
-        }
-        else {
-            db_int = 0;
-        }
+        int db_int = DPAServer.getPort() - DPAServer.getBasePort();
 
         configuration = new Configuration();
         Properties properties = new Properties();

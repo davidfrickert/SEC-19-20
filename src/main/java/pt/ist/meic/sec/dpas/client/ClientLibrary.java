@@ -7,6 +7,8 @@ import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.QuorumNotReachedException;
+import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,24 +25,34 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.LinkedHashSet;
+import java.util.*;
 
 public class ClientLibrary {
     private final static Logger logger = Logger.getLogger(ClientLibrary.class);
     private static final String SERVER_CERT = "keys/public/server/pub-server1.crt";
 
+    private List<ObjectInputStream> ins= new ArrayList<>();
+    private List<ObjectOutputStream> outs = new ArrayList<>();
 
-    private Socket clientSocket;
-    private ObjectOutputStream out;
-    private ObjectInputStream in;
     public PublicKey serverKey;
 
     private String ip;
     private int port;
+    // N from N = 2f+1
+    private static final int numberOfServers = 5;
+    // f from N = 2f+1
+    private int byzantineFaultsTolerated;
+    // Q = (N+f)/2
+    private int repliesNecessaryForQuorum;
+    private int writeId;
+    private int readId;
+    private static final int TIMEOUT = 5000;
 
     public void start(String ip, int port) {
         this.ip = ip;
         this.port = port;
+        this.byzantineFaultsTolerated = (numberOfServers - 1) / 2;
+        this.repliesNecessaryForQuorum = (int) Math.ceil((numberOfServers + byzantineFaultsTolerated) / 2.);
         connect();
 
         try{
@@ -54,53 +66,105 @@ public class ClientLibrary {
         }
     }
 
-    private void connect() {
-        boolean connected = false;
+    private int calcPort(int n) {
+        return DPAServer.getBasePort() + n;
+    }
 
-        while (!connected) {
+    private void connect() {
+
+        int serverPort = port;
+        int connections = 0;
+        while (!(connections == numberOfServers)) {
             try {
-                clientSocket = new Socket(ip, port);
-                clientSocket.setSoTimeout(15000);
-                connected = true;
-                out = new ObjectOutputStream(clientSocket.getOutputStream());
-                in = new ObjectInputStream(clientSocket.getInputStream());
+                logger.info("connecting to " + ip + ":" + serverPort);
+                Socket clientSocket = new Socket(ip, serverPort);
+                clientSocket.setSoTimeout(TIMEOUT);
                 logger.info("Connected to " + ip + ":" + port);
+
+                outs.add(new ObjectOutputStream(clientSocket.getOutputStream()));
+                ins.add(new ObjectInputStream(clientSocket.getInputStream()));
+                connections++;
+                serverPort++;
             } catch (IOException e) {
                 try {
-                    logger.info("Connection failure... Retrying in 3 seconds");
+                    logger.info("Connection failure to server " + connections +  ". Retrying in 3 seconds");
+                    logger.error("exc:", e);
                     Thread.sleep(3000);
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
                 if (! (e instanceof  ConnectException))
-                e.printStackTrace();
+                    e.printStackTrace();
             }
         }
+    }
+
+    private Socket reconnect(Object stream) {
+        System.out.println("Reconnecting...");
+        int n;
+        if (stream instanceof ObjectOutputStream) {
+            n = outs.indexOf(stream);
+        }
+        else if (stream instanceof ObjectInputStream) {
+            n = ins.indexOf(stream);
+        } else throw new IllegalArgumentException("Must supply Object stream.");
+
+        Socket socket = null;
+        try {
+            socket = new Socket(ip, calcPort(n));
+            socket.setSoTimeout(TIMEOUT);
+            outs.set(n, new ObjectOutputStream(socket.getOutputStream()));
+            ins.set(n, new ObjectInputStream(socket.getInputStream()));
+            return socket;
+        } catch (SocketException ex) {
+            System.out.println("Failed to reconnect.");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return null;
     }
 
     public void write(DecryptedPayload e) {
-        boolean done = false;
-        int attempts = 0;
-        while (!done && attempts < 10) {
-            try {
-                out.writeObject(e);
-                done = true;
-            } catch (SocketException se) {
-                logger.info("Failed to send.. Retrying connection");
-                connect();
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
+        if (e.getMsgId() == -1)
+            if (e.isRead())
+                e.setMsgId(readId++);
+            if (e.isWrite())
+                e.setMsgId(writeId++);
+
+        for (Iterator<ObjectOutputStream> it = outs.iterator(); it.hasNext(); ) {
+            boolean done = false;
+            ObjectOutputStream out = it.next();
+            int attempts = 0;
+            while (!done && attempts < 10) {
+                try {
+                    out.writeObject(e);
+                    done = true;
+                } catch (SocketException se) {
+                    int n = outs.indexOf(out);
+                    logger.info("Failed to send..");
+                    Socket s = reconnect(out);
+                    if (s != null) {
+                        out = outs.get(n);
+                    }
+
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+                attempts++;
             }
-            attempts++;
         }
     }
-
+    /*
     public void stop() throws IOException {
-        in.close();
-        out.close();
-        clientSocket.close();
+        for (ObjectOutputStream o : outs)
+            o.close();
+        for (ObjectInputStream i : ins)
+            i.close();
+        for (Socket s : sockets)
+            s.close();
     }
-
+    */
     public DecryptedPayload register(String username, PublicKey key, PrivateKey privateKey) {
         DecryptedPayload sentEncrypted = createRegisterPayload(username, key, privateKey);
         write(sentEncrypted);
@@ -194,24 +258,38 @@ public class ClientLibrary {
         return r;
     }
 
-    public DecryptedPayload receiveReply() throws SocketTimeoutException, IncorrectSignatureException {
-        try {
-            DecryptedPayload dp = (DecryptedPayload) in.readObject();
+    public DecryptedPayload select(List<DecryptedPayload> replies) {
+        return replies.stream().max(Comparator.comparing(DecryptedPayload::getMsgId)).get();
+    }
 
-            boolean validReply = dp.verifySignature();
-            if (!validReply) {
-                logger.warn("Bad Signature.");
+    public DecryptedPayload receiveReply() throws QuorumNotReachedException, IncorrectSignatureException {
+        List<DecryptedPayload> receivedPayloads = new ArrayList<>();
+        for (ObjectInputStream in : ins) {
+            try {
+                DecryptedPayload dp = (DecryptedPayload) in.readObject();
 
-                throw new IncorrectSignatureException("Received reply with bad signature");
+                boolean validReply = dp.verifySignature();
+                if (!validReply) {
+                    logger.warn("Bad Signature.");
+
+                    throw new IncorrectSignatureException("Received reply with bad signature");
+                }
+                receivedPayloads.add(dp);
+                if (receivedPayloads.size() > repliesNecessaryForQuorum) {
+                    return select(receivedPayloads);
+                }
+
+            } catch (SocketTimeoutException ste) {
+                System.out.println("Timeout - ignoring...");
+            } catch (IOException | ClassNotFoundException | IllegalStateException | NullPointerException exc) {
+                exc.printStackTrace();
             }
-
-            return dp;
-        } catch (SocketTimeoutException ste) {
-            throw ste;
-        } catch (IOException | ClassNotFoundException | IllegalStateException | NullPointerException exc) {
-            exc.printStackTrace();
         }
-        return null;
+
+        // which payload to pick?
+        // verify if all payloads are correct?
+        throw new QuorumNotReachedException("Received " + receivedPayloads.size() + " replies, but needed " +
+                repliesNecessaryForQuorum + " replies for Quorum.");
     }
 
     public boolean validateReply(DecryptedPayload dp) {

@@ -4,9 +4,9 @@ import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.QuorumNotReachedException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
 
-import java.net.SocketTimeoutException;
 import java.util.Base64;
 
 import static org.testng.Assert.assertEquals;
@@ -37,7 +37,7 @@ public class Requisites {
             c2.doAction(command1);
             ACKPayload received2 = (ACKPayload) c2.getResponse();
             assertEquals(received2.getStatus().getStatus(), Status.Success);
-        } catch (SocketTimeoutException | IncorrectSignatureException e) {
+        } catch (QuorumNotReachedException | IncorrectSignatureException e) {
             fail();
             e.printStackTrace();
         }
@@ -163,7 +163,7 @@ public class Requisites {
             ACKPayload received11 = (ACKPayload) c1.getResponse();
             assertEquals(received11.getStatus().getStatus(), Status.Success);
 
-        } catch (SocketTimeoutException | IncorrectSignatureException e) {
+        } catch (QuorumNotReachedException | IncorrectSignatureException e) {
             fail();
             e.printStackTrace();
         }

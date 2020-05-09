@@ -6,13 +6,11 @@ import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
-import pt.ist.meic.sec.dpas.server.DPAServer;
-import pt.ist.meic.sec.dpas.server.ServerLauncher;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.QuorumNotReachedException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.security.*;
 import java.security.cert.Certificate;
@@ -65,7 +63,7 @@ public class Attacker {
         }
     }
 
-    public DecryptedPayload sendInterceptedRequestPayload(DecryptedPayload intercepted, AttackType type, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
+    public DecryptedPayload sendInterceptedRequestPayload(DecryptedPayload intercepted, AttackType type, Operation operation) throws QuorumNotReachedException, IncorrectSignatureException {
         return switch (type) {
             case MITM -> mitm(intercepted, operation);
             case REPLAY -> replay(intercepted, operation);
@@ -76,7 +74,7 @@ public class Attacker {
         return new ReadPayload(null, getPublicKey(), null, null, null, privateKey);
     }
 
-    private DecryptedPayload mitm(DecryptedPayload intercepted, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
+    private DecryptedPayload mitm(DecryptedPayload intercepted, Operation operation) throws IncorrectSignatureException, QuorumNotReachedException {
         // PublicKey auth, byte[] operation, byte[] timestamp, byte[] signature, byte[] message, byte[] linkedAnnouncements
         intercepted.setSenderKey(this.publicKey);
         // attempt with a random operation because attacker can't figure out which operation this message is because it's
@@ -86,7 +84,7 @@ public class Attacker {
         return response;
     }
 
-    private DecryptedPayload replay(DecryptedPayload intercepted, Operation operation) throws SocketTimeoutException, IncorrectSignatureException {
+    private DecryptedPayload replay(DecryptedPayload intercepted, Operation operation) throws IncorrectSignatureException, QuorumNotReachedException {
         // edited - this should encrypt with the attacker's key, can't have null encryption key.
         library.write(intercepted);
         DecryptedPayload response = library.receiveReply();

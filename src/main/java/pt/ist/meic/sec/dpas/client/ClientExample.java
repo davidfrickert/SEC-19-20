@@ -8,15 +8,13 @@ import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
-import pt.ist.meic.sec.dpas.server.DPAServer;
-import pt.ist.meic.sec.dpas.server.ServerLauncher;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.QuorumNotReachedException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
-import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.security.*;
 import java.security.cert.Certificate;
@@ -38,6 +36,7 @@ public class ClientExample {
     public ClientExample(String username, String keyPath, String keyStorePassword, int serverPort) {
 
         this.username = username;
+
 
         try{
             FileInputStream is = new FileInputStream(keyPath);
@@ -115,7 +114,7 @@ public class ClientExample {
         while (attempts < max_attempts) {
             try {
                 return getResponse();
-            } catch (SocketTimeoutException | IncorrectSignatureException ste) {
+            } catch (IncorrectSignatureException | QuorumNotReachedException ste) {
                 attempts++;
                 System.out.println("Failure... Retrying. Retry Count: " + attempts);
                 library.write(e);
@@ -172,7 +171,7 @@ public class ClientExample {
      * @return Payload sent by server
      */
 
-    public DecryptedPayload getResponse() throws SocketTimeoutException, IncorrectSignatureException {
+    public DecryptedPayload getResponse() throws QuorumNotReachedException, IncorrectSignatureException {
         return library.receiveReply();
     }
 
@@ -183,6 +182,8 @@ public class ClientExample {
     public boolean validateSignature(DecryptedPayload p)  {
         return p.verifySignature();
     }
+
+
 
     public static void main(String[] args) {
 

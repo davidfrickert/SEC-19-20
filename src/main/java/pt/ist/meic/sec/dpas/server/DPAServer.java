@@ -42,7 +42,8 @@ public class DPAServer {
     private Board general;
 
     private static ServerSocket server;
-    private int port;
+    private static int port;
+    private static final int BASE_PORT = 35000;
 //    private static int port = 9876;
 
     private KeyPair keyPair;
@@ -135,9 +136,11 @@ public class DPAServer {
             try {
                 logger.info("Listening on " + server.getInetAddress().getHostAddress() + ":" + port);
                 Socket inSoc = server.accept();
+                logger.info("Accepted!");
                 ServerThread newServerThread = new ServerThread(inSoc);
                 newServerThread.start();
             } catch (IOException e) {
+                logger.warn("Stopped listening");
                 e.printStackTrace();
             }
         }
@@ -187,8 +190,11 @@ public class DPAServer {
 
         public void run() {
             try{
+                System.out.println("creating out");
                 outStream = new ObjectOutputStream(socket.getOutputStream());
+                System.out.println("created out");
                 inStream = new ObjectInputStream(socket.getInputStream());
+                System.out.println("created in");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -349,7 +355,10 @@ public class DPAServer {
 
 
 
-    public int getPort() {
+    public static int getPort() {
         return port;
+    }
+    public static int getBasePort() {
+        return BASE_PORT;
     }
 }

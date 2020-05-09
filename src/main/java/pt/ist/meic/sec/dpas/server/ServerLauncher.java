@@ -10,11 +10,11 @@ public class ServerLauncher {
     public int launched = 0;
 
     public ServerLauncher() {
-        LauncherThread t1 = new LauncherThread(8080, "keys/private/server/keystore1.p12", "server");
-        LauncherThread t2 = new LauncherThread(8081, "keys/private/server/keystore1.p12", "server");
-        LauncherThread t3 = new LauncherThread(8082, "keys/private/server/keystore1.p12", "server");
-        LauncherThread t4 = new LauncherThread(8083, "keys/private/server/keystore1.p12", "server");
-        LauncherThread t5 = new LauncherThread(8084, "keys/private/server/keystore1.p12", "server");
+        LauncherThread t1 = new LauncherThread(8080, "keys/private/server/keystore1.p12", "server1");
+        LauncherThread t2 = new LauncherThread(8081, "keys/private/server/keystore2.p12", "server2");
+        LauncherThread t3 = new LauncherThread(8082, "keys/private/server/keystore3.p12", "server3");
+        LauncherThread t4 = new LauncherThread(8083, "keys/private/server/keystore4.p12", "server4");
+        LauncherThread t5 = new LauncherThread(8084, "keys/private/server/keystore5.p12", "server5");
 
         threadList.add(t1);
         threadList.add(t2);
@@ -44,13 +44,12 @@ public class ServerLauncher {
         return sl;
     }
 
-    class LauncherThread extends Thread {
+    static class LauncherThread extends Thread {
 
         public int port;
         public String path;
         public String password;
         public DPAServer s;
-        public Thread t;
 
         public LauncherThread(int serverPort, String keyPath, String keyStorePassword) {
             this.port = serverPort;
@@ -59,8 +58,7 @@ public class ServerLauncher {
         }
         public void run() {
             s = new DPAServer(port, path, password);
-            t = new Thread (s::listen);
-            t.start();
+            s.listen();
         }
     }
 

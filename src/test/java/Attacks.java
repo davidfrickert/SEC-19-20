@@ -10,11 +10,10 @@ import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
+import pt.ist.meic.sec.dpas.common.utils.exceptions.QuorumNotReachedException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
-import pt.ist.meic.sec.dpas.server.ServerLauncher;
 
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,7 +49,7 @@ public class Attacks {
             // all replies can be casted to ACKPayload to view status message
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload(sentEncrypted, AttackType.MITM, Operation.POST);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
-        } catch (ClassCastException | SocketTimeoutException | IncorrectSignatureException cce) {
+        } catch (ClassCastException | QuorumNotReachedException | IncorrectSignatureException cce) {
             cce.printStackTrace();
            fail();
         }
@@ -62,7 +61,7 @@ public class Attacks {
      * Server detects and answers with InvalidSignature
      */
 
-    public void MITM_PostGeneral() throws IncorrectSignatureException, SocketTimeoutException {
+    public void MITM_PostGeneral() throws IncorrectSignatureException, QuorumNotReachedException {
 
         String command = "postgeneral hello world";
         DecryptedPayload sentEncrypted = c.doAction(command);
@@ -72,7 +71,7 @@ public class Attacks {
             // all replies can be casted to ACKPayload to view status message
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload(sentEncrypted, AttackType.MITM, Operation.POST_GENERAL);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
-        } catch (ClassCastException | SocketTimeoutException | IncorrectSignatureException cce) {
+        } catch (ClassCastException | QuorumNotReachedException | IncorrectSignatureException cce) {
             fail();
             cce.printStackTrace();
         }
@@ -84,7 +83,7 @@ public class Attacks {
      * Server detects and answers with InvalidSignature
      */
 
-    public void MITM_Read() throws IncorrectSignatureException, SocketTimeoutException {
+    public void MITM_Read() throws IncorrectSignatureException, QuorumNotReachedException {
 
         String pkClient1 = Base64.getEncoder().encodeToString(c.getPublicKey().getEncoded());
         String command = "read " + pkClient1 + " 0";
@@ -95,7 +94,7 @@ public class Attacks {
             // all replies can be casted to ACKPayload to view status message
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload(sentEncrypted, AttackType.MITM, Operation.READ);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
-        } catch (ClassCastException | SocketTimeoutException | IncorrectSignatureException cce) {
+        } catch (ClassCastException | QuorumNotReachedException | IncorrectSignatureException cce) {
             cce.printStackTrace();
             fail();
         }
@@ -107,7 +106,7 @@ public class Attacks {
      * Server detects and answers with InvalidSignature
      */
 
-    public void MITM_ReadGeneral() throws IncorrectSignatureException, SocketTimeoutException {
+    public void MITM_ReadGeneral() throws IncorrectSignatureException, QuorumNotReachedException {
 
         String command = "readgeneral 0";
         DecryptedPayload sentEncrypted = c.doAction(command);
@@ -117,7 +116,7 @@ public class Attacks {
             // all replies can be casted to ACKPayload to view status message
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload(sentEncrypted, AttackType.MITM, Operation.READ_GENERAL);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
-        } catch (ClassCastException | SocketTimeoutException | IncorrectSignatureException cce) {
+        } catch (ClassCastException | QuorumNotReachedException | IncorrectSignatureException cce) {
             cce.printStackTrace();
             fail();
         }
@@ -130,7 +129,7 @@ public class Attacks {
      * Server detects and answers with InvalidSignature
      */
 
-    public void MITM_Register() throws IncorrectSignatureException, SocketTimeoutException {
+    public void MITM_Register() throws IncorrectSignatureException, QuorumNotReachedException {
 
         String command = "register";
         DecryptedPayload sentEncrypted = c.doAction(command);
@@ -141,7 +140,7 @@ public class Attacks {
             ACKPayload p = (ACKPayload) attacker.sendInterceptedRequestPayload(sentEncrypted, AttackType.MITM, Operation.REGISTER);
             assertEquals(p.getStatus().getStatus(), Status.InvalidSignature);
 
-        } catch (ClassCastException | SocketTimeoutException | IncorrectSignatureException cce) {
+        } catch (ClassCastException | QuorumNotReachedException | IncorrectSignatureException cce) {
             cce.printStackTrace();
             fail();
         }
@@ -192,7 +191,7 @@ public class Attacks {
      * By having a timeout of 15s, client retries the request, it doesn't wait indefinitely for an answer.
      */
 
-    public void drop() throws IncorrectSignatureException, SocketTimeoutException {
+    public void drop() throws IncorrectSignatureException, QuorumNotReachedException {
         String command = "readgeneral 0";
         // user sends a readgeneral payload to server
         DecryptedPayload sent = c.doAction(command);
