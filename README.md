@@ -47,10 +47,23 @@ SET GLOBAL time_zone = '+1:00';
 
 2. Compile maven build: `mvn clean compile`
 
-3. Run server: `mvn exec:java@default-cli`
+3. Run server: `mvn exec:java@server -Dexec.args="[port] [keypath] [keyStorePassword]"`\
+Examples:
+```
+mvn exec:java@server -Dexec.args="35000 keys/private/server/keystore1.p12 server1"
+mvn exec:java@server -Dexec.args="35001 keys/private/server/keystore2.p12 server2"
+mvn exec:java@server -Dexec.args="35002 keys/private/server/keystore3.p12 server3"
+mvn exec:java@server -Dexec.args="35003 keys/private/server/keystore4.p12 server4"
+mvn exec:java@server -Dexec.args="35004 keys/private/server/keystore5.p12 server5"
+```
 
-4. Run client: `mvn exec:java@client -Dexec.args="[username] [keypath] [keyStorePassword]"`\
-Example: `mvn exec:java@client  -Dexec.args="test1 keys/private/clients/1.p12 client1"`
+4. Run client: `mvn exec:java@client -Dexec.args="[username] [keypath] [keyStorePassword] [serverPort]"`\
+Examples:
+```
+mvn exec:java@client -Dexec.args="test1 keys/private/clients/1.p12 client1 35000"
+mvn exec:java@client -Dexec.args="test2 keys/private/clients/2.p12 client2 35000"
+mvn exec:java@client -Dexec.args="test3 keys/private/clients/3.p12 client3 35001"
+```
 
 ### Run tests
 
