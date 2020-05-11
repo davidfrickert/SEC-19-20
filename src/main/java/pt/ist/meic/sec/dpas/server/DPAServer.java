@@ -8,6 +8,8 @@ import pt.ist.meic.sec.dpas.common.model.*;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.LastTimestampPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.GetLastTimestampPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
@@ -36,7 +38,6 @@ import java.util.stream.Collectors;
 
 public class DPAServer {
     private final static Logger logger = Logger.getLogger(DPAServer.class);
-//    private static final String KEYSTORE_PATH = "keys/private/server/keystore1.p12";
     private static final String KEY_ALIAS = "server";
 
     private Map<PublicKey, UserBoard> allBoards;
@@ -45,7 +46,9 @@ public class DPAServer {
     private static ServerSocket server;
     private static int port;
     private static final int BASE_PORT = 35000;
-//    private static int port = 9876;
+
+    // incremented on each write on generalBoard
+    private int generalWriteId;
 
     private KeyPair keyPair;
 
@@ -90,6 +93,7 @@ public class DPAServer {
             throw new IllegalStateException("ServerSocket could not be instantiated.");
         }
 
+        generalWriteId = 0;
         initBoards();
 
     }
@@ -219,6 +223,8 @@ public class DPAServer {
                                 case POST_GENERAL:
                                 case READ:
                                 case READ_GENERAL:
+                                case WRITE_BACK:
+                                case GET_LAST_TIMESTAMP:
                                     yield defaultErrorMessage(Status.InvalidSignature, "Invalid Signature.", o, dp.getSenderKey());
                             };
                             e.setMsgId(dp.getMsgId());
@@ -242,6 +248,8 @@ public class DPAServer {
                                     case POST_GENERAL -> handlePostGeneral((PostPayload) dp);
                                     case READ -> handleRead((ReadPayload) dp);
                                     case READ_GENERAL -> handleReadGeneral((ReadPayload) dp);
+                                    case GET_LAST_TIMESTAMP -> handleGetLastTimestamp((GetLastTimestampPayload) dp);
+                                    case WRITE_BACK -> null;
                                 };
                             } else {
                                 e = defaultErrorMessage(Status.NotFresh, "Message already received.",
@@ -292,10 +300,17 @@ public class DPAServer {
         }
 
         private DecryptedPayload handlePostGeneral(PostPayload p) {
+            StatusMessage status;
+            int writeId = p.getMsgId();
+            if (writeId <= DPAServer.this.generalWriteId) {
+                status = new StatusMessage(Status.InvalidRequest, "Board has newer messages.");
+                return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
+                        DPAServer.this.generalWriteId, DPAServer.this.keyPair.getPrivate());
+            }
+
             Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
             boolean success = announcementDAO.safeInsert(a);
             //boolean allExist = announcementDAO.allExist(p.getLinkedAnnouncements());
-            StatusMessage status;
             if (success) {
                 general.appendAnnouncement(a);
                 status = new StatusMessage(Status.Success);
@@ -354,6 +369,13 @@ public class DPAServer {
                     status, DPAServer.this.keyPair.getPrivate());
         }
 
+        private DecryptedPayload handleGetLastTimestamp(GetLastTimestampPayload p) {
+            logger.info("User " + p.getSenderKey().hashCode() + " attempted to get last timestamp from general board.");
+            StatusMessage status;
+            status = new StatusMessage(Status.Success);
+            return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
+                    DPAServer.this.generalWriteId, DPAServer.this.keyPair.getPrivate());
+        }
     }
 
     private DecryptedPayload defaultErrorMessage(Status status, String errorMsg, Operation o, PublicKey receiverKey) {
