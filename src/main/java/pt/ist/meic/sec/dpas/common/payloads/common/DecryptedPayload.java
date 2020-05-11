@@ -5,6 +5,7 @@ import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
 import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
@@ -16,7 +17,7 @@ public abstract class DecryptedPayload implements Serializable {
     private final Operation operation;
     private final Instant timestamp;
     private byte[] signature;
-    private Integer msgId = -1;
+    private BigInteger msgId = BigInteger.valueOf(-1);
 
     public DecryptedPayload(PublicKey auth, Operation op, Instant timestamp) {
         this.senderKey = auth;
@@ -30,7 +31,7 @@ public abstract class DecryptedPayload implements Serializable {
         byte[] senderKey = getSenderKey() != null ? getSenderKey().getEncoded() : new byte[0];
         byte[] operation = getOperation() != null ? getOperation().name().getBytes() : new byte[0];
         byte[] timestamp = getTimestamp() != null ? getTimestamp().toString().getBytes() : new byte[0];
-        return ArrayUtils.merge(senderKey, operation, timestamp, ArrayUtils.objectToBytes(msgId));
+        return ArrayUtils.merge(senderKey, operation, timestamp);
     }
 
     public PublicKey getSenderKey() {
@@ -62,11 +63,11 @@ public abstract class DecryptedPayload implements Serializable {
     }
 
     public int getMsgId() {
-        return msgId;
+        return msgId.intValue();
     }
 
     public void setMsgId(int msgId) {
-        this.msgId = msgId;
+        this.msgId = BigInteger.valueOf(msgId);
     }
 
     public boolean isRead() {
@@ -74,6 +75,6 @@ public abstract class DecryptedPayload implements Serializable {
     }
 
     public boolean isWrite() {
-        return Arrays.asList(Operation.POST, Operation.POST_GENERAL, Operation.REGISTER).contains(operation);
+        return Arrays.asList(Operation.POST, Operation.POST_GENERAL).contains(operation);
     }
 }

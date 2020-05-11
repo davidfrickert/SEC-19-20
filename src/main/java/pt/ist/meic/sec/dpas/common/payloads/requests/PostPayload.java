@@ -5,6 +5,7 @@ import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.utils.ArrayUtils;
+import pt.ist.meic.sec.dpas.common.utils.Crypto;
 
 import java.math.BigInteger;
 import java.security.PrivateKey;
@@ -19,6 +20,7 @@ public class PostPayload extends DecryptedPayload {
 
     private final String announcement;
     private final LinkedHashSet<BigInteger> linkedAnnouncements;
+    private byte[] timestampAndValueSignature;
 
 
     public Set<BigInteger> getLinkedAnnouncements() {
@@ -53,4 +55,16 @@ public class PostPayload extends DecryptedPayload {
                 ", timestamp=" + getTimestamp() +
                 '}';
     }
+
+    public void computeSignature(PrivateKey priv) {
+        super.computeSignature(priv);
+        // timestamp, String, List of related ids
+        byte[] data = ArrayUtils.merge(
+                SerializationUtils.serialize(BigInteger.valueOf(getMsgId())),
+                announcement.getBytes(),
+                SerializationUtils.serialize(linkedAnnouncements)
+        );
+        timestampAndValueSignature = Crypto.sign(data, priv);
+    }
+
 }
