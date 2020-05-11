@@ -2,6 +2,7 @@ package pt.ist.meic.sec.dpas.client;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
+import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.model.Announcement;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
@@ -172,7 +173,11 @@ public class ClientExample {
      */
 
     public DecryptedPayload getResponse() throws QuorumNotReachedException, IncorrectSignatureException {
-        return library.receiveReply();
+        DecryptedPayload received = library.receiveReply();
+        if (received.getOperation() == Operation.READ) {
+            return library.writeBack(keyPair.getPrivate(), keyPair.getPublic(), (AnnouncementsPayload) received);
+        }
+        return received;
     }
 
     public PublicKey getPublicKey() {
