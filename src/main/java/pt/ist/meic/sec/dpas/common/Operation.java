@@ -8,7 +8,8 @@ public enum Operation {
     POST_GENERAL,
     READ,
     READ_GENERAL,
-    WRITE_BACK;
+    WRITE_BACK,
+    GET_LAST_TIMESTAMP;
 
     public static Operation fromBytes(byte[] bytes) {
         return Operation.valueOf(new String(bytes));
