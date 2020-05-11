@@ -7,7 +7,9 @@ public enum Operation {
     POST,
     POST_GENERAL,
     READ,
-    READ_GENERAL;
+    READ_GENERAL,
+    WRITE_BACK,
+    GET_LAST_TIMESTAMP;
 
     public static Operation fromBytes(byte[] bytes) {
         return Operation.valueOf(new String(bytes));
