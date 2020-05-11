@@ -3,9 +3,9 @@ package pt.ist.meic.sec.dpas.client;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.LastTimestampPayload;
+import pt.ist.meic.sec.dpas.common.payloads.requests.*;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.QuorumNotReachedException;
 import pt.ist.meic.sec.dpas.server.DPAServer;
@@ -44,8 +44,13 @@ public class ClientLibrary {
     private int byzantineFaultsTolerated;
     // Q = (N+f)/2
     private int repliesNecessaryForQuorum;
+    // incremented on each write on UserBoard
     private int writeId;
+    // incremented on each read
     private int readId;
+    // general board writeId
+    private int gbWriteId;
+
     private static final int TIMEOUT = 5000;
 
     public void start(String ip, int port) {
@@ -125,12 +130,23 @@ public class ClientLibrary {
         return null;
     }
 
+    public int getLastTimestamp(PublicKey auth, PrivateKey signKey) throws QuorumNotReachedException, IncorrectSignatureException {
+        GetLastTimestampPayload ts = new GetLastTimestampPayload(auth, Instant.now(), signKey);
+        write(ts);
+        DecryptedPayload received = receiveReply();
+        LastTimestampPayload lts = (LastTimestampPayload) received;
+        return lts.getTS();
+    }
+
     public void write(DecryptedPayload e) {
         if (e.getMsgId() == -1)
             if (e.isRead())
                 e.setMsgId(readId++);
-            if (e.isWrite())
+            else if (e.isWrite())
                 e.setMsgId(writeId++);
+            else if (e.isGeneralBoardWrite()) {
+                e.setMsgId(gbWriteId++);
+            }
 
         for (Iterator<ObjectOutputStream> it = outs.iterator(); it.hasNext(); ) {
             boolean done = false;
@@ -181,6 +197,11 @@ public class ClientLibrary {
     public DecryptedPayload postGeneral(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
         Operation op = Operation.POST_GENERAL;
         DecryptedPayload sentEncrypted = createPostPayload(authKey, message, announcements, signKey, op);
+        try {
+            gbWriteId = getLastTimestamp(authKey, signKey);
+        } catch (QuorumNotReachedException | IncorrectSignatureException e) {
+            e.printStackTrace();
+        }
         write(sentEncrypted);
         return sentEncrypted;
     }
@@ -260,6 +281,13 @@ public class ClientLibrary {
 
     public DecryptedPayload select(List<DecryptedPayload> replies) {
         return replies.stream().max(Comparator.comparing(DecryptedPayload::getMsgId)).get();
+    }
+
+    public DecryptedPayload writeBack(PrivateKey signKey, PublicKey authKey, AnnouncementsPayload receivedPayload) throws QuorumNotReachedException, IncorrectSignatureException {
+        WriteBackPayload wb = new WriteBackPayload(authKey, Instant.now(),
+                signKey, receivedPayload);
+        write(wb);
+        return receiveReply();
     }
 
     public DecryptedPayload receiveReply() throws QuorumNotReachedException, IncorrectSignatureException {
