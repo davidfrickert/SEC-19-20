@@ -9,11 +9,7 @@ import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.LastTimestampPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.GetLastTimestampPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.PostPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.ReadPayload;
-import pt.ist.meic.sec.dpas.common.payloads.requests.RegisterPayload;
-import pt.ist.meic.sec.dpas.common.utils.Crypto;
+import pt.ist.meic.sec.dpas.common.payloads.requests.*;
 import pt.ist.meic.sec.dpas.common.utils.dao.AnnouncementDAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.DAO;
 import pt.ist.meic.sec.dpas.common.utils.dao.UserDAO;
@@ -250,7 +246,7 @@ public class DPAServer {
                                     case READ -> handleRead((ReadPayload) dp);
                                     case READ_GENERAL -> handleReadGeneral((ReadPayload) dp);
                                     case GET_LAST_TIMESTAMP -> handleGetLastTimestamp((GetLastTimestampPayload) dp);
-                                    case WRITE_BACK -> null;
+                                   case WRITE_BACK -> handleWriteBack((WriteBackPayload) dp);
                                 };
                             } else {
                                 e = defaultErrorMessage(Status.NotFresh, "Message already received.",
@@ -350,6 +346,52 @@ public class DPAServer {
             List<Announcement> announcements = general.getNAnnouncements(p);
             return new AnnouncementsPayload(DPAServer.this.keyPair.getPublic(), Operation.READ_GENERAL, Instant.now(),
                     new StatusMessage(Status.Success), announcements, DPAServer.this.keyPair.getPrivate());
+        }
+
+        private DecryptedPayload handleWriteBack(WriteBackPayload p) {
+            AnnouncementsPayload read = p.getData();
+            // announcements that were read by user that sent this WriteBackPayload
+            List<Announcement> announcements = read.getAnnouncements();
+            StatusMessage status;
+            if (announcements.size() == 0) {
+                status = new StatusMessage(Status.Success, "No announcements added");
+                return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.WRITE_BACK, Instant.now(),
+                        status, DPAServer.this.keyPair.getPrivate());
+            }
+            // check if all announcements have the same key (belong to the same board)
+            boolean allSameKey = announcements.stream().map(Announcement::getCreatorId).distinct().count() == 1;
+            if (! allSameKey) {
+                status = new StatusMessage(Status.InvalidRequest, "Inconsistent announcements. Announcements belong to different boards");
+                return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.WRITE_BACK, Instant.now(),
+                        status, DPAServer.this.keyPair.getPrivate());
+            }
+
+            PublicKey boardKey = announcements.get(0).getCreatorId();
+            Optional<UserBoard> userBoardOpt = getUserBoard(boardKey);
+            int inserted = 0, rejectedAlreadyExists = 0, rejectedInvalidLinkedAnnouncements = 0;
+            if (userBoardOpt.isPresent()) {
+                UserBoard userBoard = userBoardOpt.get();
+                for (Announcement a : announcements) {
+                    boolean success;
+                    // check if related announcements exist
+                    boolean allExists = announcementDAO.allExist(a.getReferred());
+                    if (allExists) {
+                        success = announcementDAO.safeInsert(a);
+                        if (success) {
+                            userBoard.appendAnnouncement(a);
+                            inserted++;
+                        } else rejectedAlreadyExists++;
+                    } else rejectedInvalidLinkedAnnouncements++;
+                }
+            } else {
+                status = new StatusMessage(Status.InvalidRequest, "This user isn't registered in the system");
+                return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.WRITE_BACK, Instant.now(),
+                        status, DPAServer.this.keyPair.getPrivate());
+            }
+            status = new StatusMessage(Status.Success, "Inserted: " + inserted +
+                    ", already in db: " + rejectedAlreadyExists + ", invalid linked announcements: " + rejectedInvalidLinkedAnnouncements);
+            return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.WRITE_BACK, Instant.now(),
+                    status, DPAServer.this.keyPair.getPrivate());
         }
 
         private DecryptedPayload handleRegister(RegisterPayload p){
