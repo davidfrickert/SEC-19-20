@@ -198,7 +198,9 @@ public class ClientLibrary {
         Operation op = Operation.POST_GENERAL;
         DecryptedPayload sentEncrypted = createPostPayload(authKey, message, announcements, signKey, op);
         try {
+            logger.info("Current general board write ID: " + gbWriteId);
             gbWriteId = getLastTimestamp(authKey, signKey);
+            logger.info("Received " + gbWriteId);
         } catch (QuorumNotReachedException | IncorrectSignatureException e) {
             e.printStackTrace();
         }

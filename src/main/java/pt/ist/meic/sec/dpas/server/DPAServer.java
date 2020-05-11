@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class DPAServer {
@@ -48,7 +49,7 @@ public class DPAServer {
     private static final int BASE_PORT = 35000;
 
     // incremented on each write on generalBoard
-    private int generalWriteId;
+    private AtomicInteger generalWriteId;
 
     private KeyPair keyPair;
 
@@ -93,8 +94,8 @@ public class DPAServer {
             throw new IllegalStateException("ServerSocket could not be instantiated.");
         }
 
-        generalWriteId = 0;
         initBoards();
+        generalWriteId = new AtomicInteger(this.general.getAnnouncements().size());
 
     }
 
@@ -302,16 +303,18 @@ public class DPAServer {
         private DecryptedPayload handlePostGeneral(PostPayload p) {
             StatusMessage status;
             int writeId = p.getMsgId();
-            if (writeId <= DPAServer.this.generalWriteId) {
+            logger.info("User " + p.getSenderKey().hashCode() + " attempted to post in General Board with " + writeId + " message ID!");
+            if (writeId < DPAServer.this.getGeneralWriteId()) {
                 status = new StatusMessage(Status.InvalidRequest, "Board has newer messages.");
                 return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
-                        DPAServer.this.generalWriteId, DPAServer.this.keyPair.getPrivate());
+                        DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
             }
 
             Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
             boolean success = announcementDAO.safeInsert(a);
             //boolean allExist = announcementDAO.allExist(p.getLinkedAnnouncements());
             if (success) {
+                generalWriteId.incrementAndGet();
                 general.appendAnnouncement(a);
                 status = new StatusMessage(Status.Success);
             }
@@ -338,7 +341,7 @@ public class DPAServer {
                 }
             }
             return new AnnouncementsPayload(DPAServer.this.keyPair.getPublic(), Operation.READ, Instant.now(),
-                    statusMessage, announcements, DPAServer.this.keyPair.getPrivate());
+                    statusMessage, DPAServer.this.getGeneralWriteId(), announcements, DPAServer.this.keyPair.getPrivate());
 
         }
 
@@ -370,11 +373,11 @@ public class DPAServer {
         }
 
         private DecryptedPayload handleGetLastTimestamp(GetLastTimestampPayload p) {
-            logger.info("User " + p.getSenderKey().hashCode() + " attempted to get last timestamp from general board.");
+            logger.info("User " + p.getSenderKey().hashCode() + " attempted to get last timestamp (" + generalWriteId.get() + ") from general board.");
             StatusMessage status;
             status = new StatusMessage(Status.Success);
             return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
-                    DPAServer.this.generalWriteId, DPAServer.this.keyPair.getPrivate());
+                    DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
         }
     }
 
@@ -384,7 +387,9 @@ public class DPAServer {
     }
 
 
-
+    public int getGeneralWriteId() {
+        return generalWriteId.get();
+    }
     public static int getPort() {
         return port;
     }

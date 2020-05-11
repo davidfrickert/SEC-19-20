@@ -29,6 +29,15 @@ public class AnnouncementsPayload extends ACKPayload {
         computeSignature(signKey);
     }
 
+    public AnnouncementsPayload(PublicKey auth, Operation op, Instant timestamp, StatusMessage status, Integer msgId,
+                                List<Announcement> announcements, PrivateKey signKey) {
+        super(auth, op, timestamp, status);
+        // temporary fix
+        this.announcements = SerializationUtils.deserialize(SerializationUtils.serialize(new ArrayList<>(announcements)));
+        this.setMsgId(msgId);
+        computeSignature(signKey);
+    }
+
     @Override
     public byte[] asBytes() {
         return ArrayUtils.merge(ArrayUtils.objectToBytes(this.announcements), super.asBytes());
