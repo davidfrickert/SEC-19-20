@@ -14,15 +14,10 @@ import static org.testng.Assert.fail;
 
 public class Requisites {
 
-    private DPAServer s = new DPAServer(9876, "keys/private/server/keystore1.p12", "server");
+    // LAUNCH SERVERS MANUALLY FIRST
 
-    {
-        Thread serverThread = new Thread (s::listen);
-        serverThread.start();
-    }
-
-    ClientExample c1 = new ClientExample("test1", "keys/private/clients/1.p12", "client1", 9876);
-    ClientExample c2 = new ClientExample("test2", "keys/private/clients/2.p12", "client2", 9876);
+    ClientExample c1 = new ClientExample("test1", "keys/private/clients/1.p12", "client1", 35000);
+    ClientExample c2 = new ClientExample("test2", "keys/private/clients/2.p12", "client2", 35000);
 
     @Test(priority = 1)
     public void testRegister(){
@@ -141,7 +136,7 @@ public class Requisites {
             ACKPayload received8 = (ACKPayload) c2.getResponse();
             assertEquals(received8.getStatus().getStatus(), Status.Success);
 
-            //Client 1 reads Client 2 annoucnemt that has a reference to another one
+            //Client 1 reads Client 2 annoucement that has a reference to another one
             c1.doAction(command7);
             AnnouncementsPayload received9 = (AnnouncementsPayload) c1.getResponse();
             assertEquals(received9.getAnnouncements().size(), 2);

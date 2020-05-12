@@ -2,7 +2,9 @@ package pt.ist.meic.sec.dpas.client;
 
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
+import pt.ist.meic.sec.dpas.common.Status;
 import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
+import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.LastTimestampPayload;
 import pt.ist.meic.sec.dpas.common.payloads.requests.*;
@@ -130,6 +132,14 @@ public class ClientLibrary {
         return null;
     }
 
+    public boolean preparePostGeneral(PublicKey auth, PrivateKey signKey) throws QuorumNotReachedException, IncorrectSignatureException {
+        PostGeneralPreparePayload pgp = new PostGeneralPreparePayload(auth, Instant.now(), signKey);
+        write(pgp);
+        DecryptedPayload received = receiveReply();
+        ACKPayload ack = (ACKPayload) received;
+        return ack.getStatus().getStatus() == Status.Success;
+    }
+
     public int getLastTimestamp(PublicKey auth, PrivateKey signKey) throws QuorumNotReachedException, IncorrectSignatureException {
         GetLastTimestampPayload ts = new GetLastTimestampPayload(auth, Instant.now(), signKey);
         write(ts);
@@ -144,6 +154,8 @@ public class ClientLibrary {
                 e.setMsgId(readId++);
             else if (e.isWrite())
                 e.setMsgId(writeId++);
+            else if (e.isGeneralBoardPrepare())
+                e.setMsgId(gbWriteId);
             else if (e.isGeneralBoardWrite()) {
                 e.setMsgId(gbWriteId++);
             }
@@ -198,12 +210,12 @@ public class ClientLibrary {
         Operation op = Operation.POST_GENERAL;
         DecryptedPayload sentEncrypted = createPostPayload(authKey, message, announcements, signKey, op);
         try {
-            logger.info("Current general board write ID: " + gbWriteId);
             gbWriteId = getLastTimestamp(authKey, signKey);
-            logger.info("Received " + gbWriteId);
+            logger.info("Received write ID " + gbWriteId + " from server");
         } catch (QuorumNotReachedException | IncorrectSignatureException e) {
             e.printStackTrace();
         }
+
         write(sentEncrypted);
         return sentEncrypted;
     }

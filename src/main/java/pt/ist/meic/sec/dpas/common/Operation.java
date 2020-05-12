@@ -12,6 +12,7 @@ public enum Operation {
     GET_LAST_TIMESTAMP,
     VALUE,
     ACK,
+    POST_GENERAL_PREPARE,
     READ_COMPLETED;
 
     public static Operation fromBytes(byte[] bytes) {

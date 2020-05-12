@@ -9,14 +9,12 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
 
-public class CommitPostPayload extends DecryptedPayload {
-    private final static Logger logger = Logger.getLogger(CommitPostPayload.class);
+public class PostGeneralPreparePayload extends DecryptedPayload {
+    private final static Logger logger = Logger.getLogger(PostGeneralPreparePayload.class);
 
-    private StatusMessage status;
 
-    public CommitPostPayload(PublicKey auth, Operation op, Instant timestamp, StatusMessage status, PrivateKey signKey) {
-        super(auth, op, timestamp);
-        this.status = status;
+    public PostGeneralPreparePayload(PublicKey auth, Instant timestamp, PrivateKey signKey) {
+        super(auth, Operation.POST_GENERAL_PREPARE, timestamp);
         computeSignature(signKey);
     }
 

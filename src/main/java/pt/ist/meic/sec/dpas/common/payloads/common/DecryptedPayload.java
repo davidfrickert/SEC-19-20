@@ -78,6 +78,10 @@ public abstract class DecryptedPayload implements Serializable {
         return operation == Operation.POST;
     }
 
+    public boolean isGeneralBoardPrepare() {
+        return operation == Operation.POST_GENERAL_PREPARE;
+    }
+
     public boolean isGeneralBoardWrite() {
         return operation == Operation.POST_GENERAL;
     }

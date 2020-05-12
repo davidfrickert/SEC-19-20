@@ -43,6 +43,7 @@ public class DPAServer {
 
     // incremented on each write on generalBoard
     private AtomicInteger generalWriteId;
+    private PublicKey nextAnnouncer;
 
     private KeyPair keyPair;
 
@@ -228,6 +229,7 @@ public class DPAServer {
                                 case VALUE:
                                 case ACK:
                                 case READ_COMPLETED:
+                                case POST_GENERAL_PREPARE:
                                     yield defaultErrorMessage(Status.InvalidSignature, "Invalid Signature.", o, dp.getSenderKey());
                             };
                             e.setMsgId(dp.getMsgId());
@@ -251,6 +253,7 @@ public class DPAServer {
                                     case WRITE_BACK -> handleWriteBack((WriteBackPayload) dp);
                                     case ACK -> null;
                                     case READ_COMPLETED -> handleReadCompleted((ReadCompletedPayload) dp);
+                                    case POST_GENERAL_PREPARE -> handlePostGeneralPrepare((PostGeneralPreparePayload) dp);
                                     case VALUE -> null;
                                 };
                             } else {
@@ -321,27 +324,56 @@ public class DPAServer {
             return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST, Instant.now(), status, DPAServer.this.keyPair.getPrivate());
         }
 
-        private DecryptedPayload handlePostGeneral(PostPayload p) {
-            StatusMessage status;
-            int writeId = p.getMsgId();
-            logger.info("User " + p.getSenderKey().hashCode() + " attempted to post in General Board with " + writeId + " message ID!");
-            if (writeId < DPAServer.this.getGeneralWriteId()) {
-                status = new StatusMessage(Status.InvalidRequest, "Board has newer messages.");
-                return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
-                        DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
+        private DecryptedPayload handlePostGeneralPrepare(PostGeneralPreparePayload p) {
+            synchronized (generalWriteId) {
+                StatusMessage status;
+                int writeId = p.getMsgId();
+                logger.info("User " + p.getSenderKey().hashCode() + " prepared post in General Board with " + writeId + " message ID!");
+                if (writeId < DPAServer.this.getGeneralWriteId()) {
+                    status = new StatusMessage(Status.OldID, "Board has newer messages.");
+                    return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
+                            DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
+                } else {
+                    if (nextAnnouncer == null || nextAnnouncer != p.getSenderKey()) {
+                        status = new StatusMessage(Status.PostInProgress, "Another post is in progress.");
+                    }
+                    else {
+                        nextAnnouncer = p.getSenderKey();
+                        status = new StatusMessage(Status.Success);
+                    }
+                    return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST_GENERAL_PREPARE, Instant.now(),
+                            status, DPAServer.this.keyPair.getPrivate());
+                }
             }
+        }
 
-            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
-            boolean success = announcementDAO.safeInsert(a);
-            //boolean allExist = announcementDAO.allExist(p.getLinkedAnnouncements());
-            if (success) {
-                generalWriteId.incrementAndGet();
-                general.appendAnnouncement(a);
-                status = new StatusMessage(Status.Success);
+
+
+        private DecryptedPayload handlePostGeneral(PostPayload p) {
+            synchronized (generalWriteId) {
+                StatusMessage status;
+                int writeId = p.getMsgId();
+                logger.info("User " + p.getSenderKey().hashCode() + " attempted to post in General Board with " + writeId + " message ID!");
+                if (writeId < DPAServer.this.getGeneralWriteId()) {
+                    status = new StatusMessage(Status.OldID, "Board has newer messages.");
+                    return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
+                            DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
+                }
+                else {
+                    Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
+                    boolean success = announcementDAO.safeInsert(a);
+                    //boolean allExist = announcementDAO.allExist(p.getLinkedAnnouncements());
+                    if (success) {
+                        generalWriteId.incrementAndGet();
+                        nextAnnouncer = null;
+                        general.appendAnnouncement(a);
+                        status = new StatusMessage(Status.Success);
+                    }
+                    else status = new StatusMessage(Status.InvalidRequest, "This announcement already exists.");
+                    return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST_GENERAL, Instant.now(),
+                            status, DPAServer.this.keyPair.getPrivate());
+                }
             }
-            else status = new StatusMessage(Status.InvalidRequest, "This announcement already exists.");
-            return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST_GENERAL, Instant.now(),
-                    status, DPAServer.this.keyPair.getPrivate());
         }
 
         private DecryptedPayload handleRead(ReadPayload p) {
@@ -452,7 +484,6 @@ public class DPAServer {
         return new ACKPayload(DPAServer.this.keyPair.getPublic(), o, Instant.now(),
                 new StatusMessage(status, errorMsg), DPAServer.this.keyPair.getPrivate());
     }
-
 
     public int getGeneralWriteId() {
         return generalWriteId.get();
