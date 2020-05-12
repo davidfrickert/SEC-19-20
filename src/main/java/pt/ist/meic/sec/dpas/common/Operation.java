@@ -9,7 +9,10 @@ public enum Operation {
     READ,
     READ_GENERAL,
     WRITE_BACK,
-    GET_LAST_TIMESTAMP;
+    GET_LAST_TIMESTAMP,
+    VALUE,
+    ACK,
+    READ_COMPLETED;
 
     public static Operation fromBytes(byte[] bytes) {
         return Operation.valueOf(new String(bytes));

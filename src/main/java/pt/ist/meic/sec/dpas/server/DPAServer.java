@@ -26,10 +26,7 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -54,6 +51,9 @@ public class DPAServer {
     private AnnouncementDAO announcementDAO = new AnnouncementDAO();
     private UserDAO userDAO = new UserDAO();
     private DAO<PayloadHistory, Long> payloadDAO = new DAO<>(PayloadHistory.class);
+
+    private static HashMap<PublicKey, ArrayList<PublicKey>> listenerMap = new HashMap<>();
+    private static HashMap<PublicKey, Integer> atomicRegister = new HashMap<>();
 
     public DPAServer(int serverPort, String keyPath, String keyStorePassword) {
         try {
@@ -116,6 +116,9 @@ public class DPAServer {
                 UserBoard userBoard = new UserBoard(user.getPublicKey());
                 userBoardDAO.persist(userBoard);
                 boards.put(user.getPublicKey(), userBoard);
+                //associate board with a wts = 0 and create a list of listeners
+                listenerMap.put(user.getPublicKey(), new ArrayList());
+                atomicRegister.put(user.getPublicKey(), 0);
             }
         }
         boards.values().forEach(u -> logger.info("UserBoard loaded: " + u));
@@ -222,16 +225,15 @@ public class DPAServer {
                                 case READ_GENERAL:
                                 case WRITE_BACK:
                                 case GET_LAST_TIMESTAMP:
+                                case VALUE:
+                                case ACK:
+                                case READ_COMPLETED:
                                     yield defaultErrorMessage(Status.InvalidSignature, "Invalid Signature.", o, dp.getSenderKey());
                             };
                             e.setMsgId(dp.getMsgId());
                             outStream.writeObject(e);
                         } else {
                             logger.info("Received " + dp.getOperation() + " with correct signature from " + dp.getSenderKey().hashCode());
-
-                            //Bizantine signature verification
-                            boolean bizantineSignature;
-                            //bizantineSignature = Crypto.verify(value.getBytes(), signature, dp.getSenderKey())
 
                             byte[] signature = dp.getSignature();
                             Instant timestamp = dp.getTimestamp();
@@ -246,14 +248,19 @@ public class DPAServer {
                                     case READ -> handleRead((ReadPayload) dp);
                                     case READ_GENERAL -> handleReadGeneral((ReadPayload) dp);
                                     case GET_LAST_TIMESTAMP -> handleGetLastTimestamp((GetLastTimestampPayload) dp);
-                                   case WRITE_BACK -> handleWriteBack((WriteBackPayload) dp);
+                                    case WRITE_BACK -> handleWriteBack((WriteBackPayload) dp);
+                                    case ACK -> null;
+                                    case READ_COMPLETED -> handleReadCompleted((ReadCompletedPayload) dp);
+                                    case VALUE -> null;
                                 };
                             } else {
                                 e = defaultErrorMessage(Status.NotFresh, "Message already received.",
                                         dp.getOperation(), dp.getSenderKey());
                             }
-                            e.setMsgId(dp.getMsgId());
-                            outStream.writeObject(e);
+                            if(e != null){
+                                e.setMsgId(dp.getMsgId());
+                                outStream.writeObject(e);
+                            }
                         }
                     } catch (MissingDataException e) {
                         if (dp.getSenderKey() != null) {
@@ -273,11 +280,27 @@ public class DPAServer {
             }
         }
 
+        private DecryptedPayload handleReadCompleted(ReadCompletedPayload dp) {
+            PublicKey boardKey = dp.getBoardReadFrom();
+            DPAServer.this.listenerMap.get(boardKey).add(dp.getSenderKey());
+            return null;
+        }
+
         private DecryptedPayload handlePost(PostPayload p) {
             Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
             Optional<UserBoard> optUB = getUserBoard(p.getSenderKey());
             boolean success;
             StatusMessage status;
+
+            //atomic register process
+            int writeId = p.getMsgId();
+            if (writeId < DPAServer.this.atomicRegister.get(p.getSenderKey())) {
+                status = new StatusMessage(Status.InvalidRequest, "Board has newer messages.");
+                return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
+                        DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
+            }
+
+            broadcastPost();
 
             if (optUB.isPresent()) {
                 UserBoard ub = optUB.get();
@@ -286,6 +309,8 @@ public class DPAServer {
                     if (allExists) {
                         success = announcementDAO.safeInsert(a);
                         if (success) {
+                            DPAServer.this.atomicRegister.put(p.getSenderKey(),
+                                    DPAServer.this.atomicRegister.get(p.getSenderKey()) + 1);
                             ub.appendAnnouncement(a);
                             status = new StatusMessage(Status.Success);
                         }  else status = new StatusMessage(Status.InvalidRequest, "Announcement already exists.");
@@ -323,6 +348,8 @@ public class DPAServer {
             logger.info("User " + p.getSenderKey().hashCode() + " attempted to read User " + p.getBoardToReadFrom().hashCode() + " board!");
             PublicKey boardKey = p.getBoardToReadFrom();
             Optional<UserBoard> optUB = getUserBoard(boardKey);
+            //Add user to listener list
+            DPAServer.this.listenerMap.get(boardKey).add(p.getSenderKey());
             StatusMessage statusMessage;
             List<Announcement> announcements = new ArrayList<>();
             if (optUB.isEmpty()) {
@@ -437,5 +464,8 @@ public class DPAServer {
     }
     public static int getBasePort() {
         return BASE_PORT;
+    }
+    public void broadcastPost(){
+
     }
 }
