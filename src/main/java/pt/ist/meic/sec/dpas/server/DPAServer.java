@@ -470,9 +470,11 @@ public class DPAServer {
         }
 
         private DecryptedPayload handleGetLastTimestamp(GetLastTimestampPayload p) {
-            logger.info("User " + p.getSenderKey().hashCode() + " attempted to get last timestamp (" + generalWriteId.get() + ") from general board.");
-            return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), new StatusMessage(Status.Success),
-                    DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
+            synchronized (generalWriteId) {
+                logger.info("User " + p.getSenderKey().hashCode() + " attempted to get last timestamp (" + generalWriteId.get() + ") from general board.");
+                return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), new StatusMessage(Status.Success),
+                        DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
+            }
         }
     }
 
@@ -486,9 +488,9 @@ public class DPAServer {
     }
     // clear nextAnnouncer if reserved for more than 5000 ms
     public void checkPrepareTimeout() {
-        if (Duration.between(Instant.now(), nextAnnouncer.getKey()).toMillis() > 5000) {
-            nextAnnouncer = null;
-        }
+        if (nextAnnouncer != null)
+            if (Duration.between(Instant.now(), nextAnnouncer.getKey()).toMillis() > 5000)
+                nextAnnouncer = null;
     }
     public static int getPort() {
         return port;

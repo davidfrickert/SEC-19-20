@@ -213,6 +213,7 @@ public class ClientLibrary {
         try {
             gbWriteId = getLastTimestamp(authKey, signKey);
             logger.info("Received write ID " + gbWriteId + " from server");
+            preparePostGeneral(authKey, signKey);
         } catch (QuorumNotReachedException | IncorrectSignatureException e) {
             e.printStackTrace();
         }
