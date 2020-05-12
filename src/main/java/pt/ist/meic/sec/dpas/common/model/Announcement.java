@@ -43,6 +43,7 @@ public class Announcement implements Serializable, Comparable<Announcement> {
         this.creatorId = creatorId;
         this.referred = referred;
         this.sendTime = sendTime;
+        this.wtsTimestamp = wtsTimestamp;
 
         this.hash = calcHash();
     }
