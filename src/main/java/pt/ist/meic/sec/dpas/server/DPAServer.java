@@ -53,7 +53,6 @@ public class DPAServer {
     private UserDAO userDAO = new UserDAO();
     private DAO<PayloadHistory, Long> payloadDAO = new DAO<>(PayloadHistory.class);
 
-    private static HashMap<PublicKey, ArrayList<PublicKey>> listenerMap = new HashMap<>();
     private static HashMap<PublicKey, Integer> atomicRegister = new HashMap<>();
 
     public DPAServer(int serverPort, String keyPath, String keyStorePassword) {
@@ -119,7 +118,6 @@ public class DPAServer {
                 boards.put(user.getPublicKey(), userBoard);
                 //associate board with a wts = 0 and create a list of listeners
             }
-            listenerMap.put(user.getPublicKey(), new ArrayList());
             atomicRegister.put(user.getPublicKey(), 0);
         }
         boards.values().forEach(u -> logger.info("UserBoard loaded: " + u));
@@ -285,7 +283,6 @@ public class DPAServer {
 
         private DecryptedPayload handleReadCompleted(ReadCompletedPayload dp) {
             PublicKey boardKey = dp.getBoardReadFrom();
-            DPAServer.this.listenerMap.remove(boardKey).add(dp.getSenderKey());
             return null;
         }
 
@@ -302,8 +299,6 @@ public class DPAServer {
                 return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
                         DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
             }
-
-            broadcastPost();
 
             if (optUB.isPresent()) {
                 UserBoard ub = optUB.get();
@@ -379,7 +374,6 @@ public class DPAServer {
             PublicKey boardKey = p.getBoardToReadFrom();
             Optional<UserBoard> optUB = getUserBoard(boardKey);
             //Add user to listener list
-            DPAServer.this.listenerMap.get(boardKey).add(p.getSenderKey());
             StatusMessage statusMessage;
             List<Announcement> announcements = new ArrayList<>();
             if (optUB.isEmpty()) {
@@ -491,8 +485,5 @@ public class DPAServer {
     }
     public static int getBasePort() {
         return BASE_PORT;
-    }
-    public void broadcastPost(){
-
     }
 }
