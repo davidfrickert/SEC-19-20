@@ -463,6 +463,7 @@ public class DPAServer {
                 UserBoard userBoard = new UserBoard(u.getPublicKey());
                 allBoards.put(u.getPublicKey(), userBoard);
                 userBoardDAO.persist(userBoard);
+                atomicRegister.put(p.getSenderKey(), 0);
             }
             return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.REGISTER, Instant.now(),
                     status, DPAServer.this.keyPair.getPrivate());
