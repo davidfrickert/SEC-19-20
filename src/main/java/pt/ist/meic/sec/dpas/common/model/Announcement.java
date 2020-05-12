@@ -10,10 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 public class Announcement implements Serializable, Comparable<Announcement> {
@@ -30,6 +27,8 @@ public class Announcement implements Serializable, Comparable<Announcement> {
     private final Instant receivedTime = Instant.now();
     private Instant sendTime;
 
+    private int wtsTimestamp;
+
     @Column(columnDefinition = "VARBINARY(4096)")
     private PublicKey creatorId;
 
@@ -39,7 +38,7 @@ public class Announcement implements Serializable, Comparable<Announcement> {
     @Column(nullable = false, columnDefinition = "BIGINT")
     private Set<BigInteger> referred;
 
-    public Announcement(String message, PublicKey creatorId, Set<BigInteger> referred, Instant sendTime) {
+    public Announcement(String message, PublicKey creatorId, Set<BigInteger> referred, Instant sendTime, int wtsTimestamp) {
         this.message = message;
         this.creatorId = creatorId;
         this.referred = referred;
@@ -101,10 +100,14 @@ public class Announcement implements Serializable, Comparable<Announcement> {
                 '}';
     }
 
+    public int getWtsTimestamp() {
+        return wtsTimestamp;
+    }
+
     private String calcHash() {
         try {
             MessageDigest d = MessageDigest.getInstance("SHA-512");
-            List<Object> fields = Arrays.asList(message, sendTime.toString(), creatorId, referred);
+            List<Object> fields = Arrays.asList(message, wtsTimestamp, creatorId, referred);
             String digest = Hex.encodeHexString(d.digest(ArrayUtils.objectToBytes(fields)));
             System.out.println("Announcement Digest: " + digest);
             return digest;
@@ -122,5 +125,18 @@ public class Announcement implements Serializable, Comparable<Announcement> {
     public int compareTo(Announcement o) {
         if (receivedTime == null) return 0;
         return o.receivedTime.compareTo(this.receivedTime);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Announcement that = (Announcement) o;
+        return hash.equals(that.hash);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(hash);
     }
 }

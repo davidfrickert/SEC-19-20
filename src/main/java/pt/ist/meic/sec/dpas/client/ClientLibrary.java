@@ -38,9 +38,9 @@ public class ClientLibrary {
 
     private String ip;
     private int port;
-    // N from N = 2f+1
+    // N from N > 3f
     private static final int numberOfServers = 5;
-    // f from N = 2f+1
+    // f from f <= N / 3
     private int byzantineFaultsTolerated;
     // Q = (N+f)/2
     private int repliesNecessaryForQuorum;
@@ -56,7 +56,7 @@ public class ClientLibrary {
     public void start(String ip, int port) {
         this.ip = ip;
         this.port = port;
-        this.byzantineFaultsTolerated = (numberOfServers - 1) / 2;
+        this.byzantineFaultsTolerated = (numberOfServers) / 3;
         this.repliesNecessaryForQuorum = (int) Math.ceil((numberOfServers + byzantineFaultsTolerated) / 2.);
         connect();
 
@@ -293,6 +293,7 @@ public class ClientLibrary {
     }
 
     public DecryptedPayload receiveReply() throws QuorumNotReachedException, IncorrectSignatureException {
+        HashMap<Integer, List<DecryptedPayload>> received = new HashMap<>();
         List<DecryptedPayload> receivedPayloads = new ArrayList<>();
         for (ObjectInputStream in : ins) {
             try {
@@ -304,9 +305,31 @@ public class ClientLibrary {
 
                     throw new IncorrectSignatureException("Received reply with bad signature");
                 }
+
+                if (!received.containsKey(dp.getMsgId())) {
+                    List<DecryptedPayload> initial = new ArrayList<>(Arrays.asList(dp));
+                    received.put(dp.getMsgId(), initial);
+                } else {
+                    List<DecryptedPayload> receivedAtTimeT = received.get(dp.getMsgId());
+                    receivedAtTimeT.add(dp);
+                }
                 receivedPayloads.add(dp);
-                if (receivedPayloads.size() > repliesNecessaryForQuorum) {
+
+
+                if (receivedPayloads.size() > repliesNecessaryForQuorum && dp.isWrite()) {
                     return select(receivedPayloads);
+                }
+
+                long uniquePayloadsReceived = received.values().stream()
+                        .filter(decryptedPayloads -> decryptedPayloads.size() > repliesNecessaryForQuorum)
+                        .distinct()
+                        .count();
+
+
+                boolean readComplete = uniquePayloadsReceived > 0 && uniquePayloadsReceived <= 2;
+
+                if (readComplete) {
+                    System.out.println("i recv");
                 }
 
             } catch (SocketTimeoutException ste) {

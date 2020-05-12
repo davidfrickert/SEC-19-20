@@ -117,9 +117,9 @@ public class DPAServer {
                 userBoardDAO.persist(userBoard);
                 boards.put(user.getPublicKey(), userBoard);
                 //associate board with a wts = 0 and create a list of listeners
-                listenerMap.put(user.getPublicKey(), new ArrayList());
-                atomicRegister.put(user.getPublicKey(), 0);
             }
+            listenerMap.put(user.getPublicKey(), new ArrayList());
+            atomicRegister.put(user.getPublicKey(), 0);
         }
         boards.values().forEach(u -> logger.info("UserBoard loaded: " + u));
         this.allBoards = boards;
@@ -287,7 +287,7 @@ public class DPAServer {
         }
 
         private DecryptedPayload handlePost(PostPayload p) {
-            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
+            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(),p.getTimestamp(), p.getMsgId());
             Optional<UserBoard> optUB = getUserBoard(p.getSenderKey());
             boolean success;
             StatusMessage status;
@@ -331,7 +331,7 @@ public class DPAServer {
                         DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
             }
 
-            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
+            Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp(), p.getMsgId());
             boolean success = announcementDAO.safeInsert(a);
             //boolean allExist = announcementDAO.allExist(p.getLinkedAnnouncements());
             if (success) {

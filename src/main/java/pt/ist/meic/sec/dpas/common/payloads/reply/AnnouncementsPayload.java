@@ -11,6 +11,7 @@ import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represent a Payload as a reply to READ / READ_GENERAL operations
@@ -60,5 +61,18 @@ public class AnnouncementsPayload extends ACKPayload {
                 ", operation=" + getOperation() +
                 ", timestamp=" + getTimestamp() +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AnnouncementsPayload that = (AnnouncementsPayload) o;
+        return Objects.equals(announcements, that.announcements);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(announcements);
     }
 }

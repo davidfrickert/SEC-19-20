@@ -175,7 +175,10 @@ public class ClientExample {
     public DecryptedPayload getResponse() throws QuorumNotReachedException, IncorrectSignatureException {
         DecryptedPayload received = library.receiveReply();
         if (received.getOperation() == Operation.READ) {
-            return library.writeBack(keyPair.getPrivate(), keyPair.getPublic(), (AnnouncementsPayload) received);
+            logger.info("Starting write back phase");
+            ACKPayload resp = (ACKPayload) library.writeBack(keyPair.getPrivate(), keyPair.getPublic(), (AnnouncementsPayload) received);
+
+            logger.info("End write back phase, status: " + resp.getStatus());
         }
         return received;
     }
