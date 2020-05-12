@@ -358,7 +358,7 @@ public class DPAServer {
                             DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
                 }
                 else {
-                    Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp());
+                    Announcement a = new Announcement(p.getData(), p.getSenderKey(), p.getLinkedAnnouncements(), p.getTimestamp(), p.getMsgId());
                     boolean success = announcementDAO.safeInsert(a);
                     //boolean allExist = announcementDAO.allExist(p.getLinkedAnnouncements());
                     if (success) {

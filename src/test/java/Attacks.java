@@ -24,15 +24,10 @@ import static org.testng.Assert.*;
 @Test
 public class Attacks {
 
-    private DPAServer s = new DPAServer(9876, "keys/private/server/keystore1.p12", "server");
+    // LAUNCH SERVERS MANUALLY FIRST
 
-    {
-        Thread serverThread = new Thread (s::listen);
-        serverThread.start();
-    }
-
-    ClientExample c = new ClientExample("test", "keys/private/clients/2.p12", "client2", 9876);
-    Attacker attacker = new Attacker(9876);
+    ClientExample c = new ClientExample("test", "keys/private/clients/2.p12", "client2", 35000);
+    Attacker attacker = new Attacker(35000);
 
     /**
      * Man in the Middle server detection for a POST operation,
