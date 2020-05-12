@@ -28,6 +28,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ClientLibrary {
     private final static Logger logger = Logger.getLogger(ClientLibrary.class);
@@ -40,9 +41,9 @@ public class ClientLibrary {
 
     private String ip;
     private int port;
-    // N from N = 2f+1
+    // N from N > 3f
     private static final int numberOfServers = 5;
-    // f from N = 2f+1
+    // f from f <= N / 3
     private int byzantineFaultsTolerated;
     // Q = (N+f)/2
     private int repliesNecessaryForQuorum;
@@ -58,7 +59,7 @@ public class ClientLibrary {
     public void start(String ip, int port) {
         this.ip = ip;
         this.port = port;
-        this.byzantineFaultsTolerated = (numberOfServers - 1) / 2;
+        this.byzantineFaultsTolerated = (numberOfServers) / 3;
         this.repliesNecessaryForQuorum = (int) Math.ceil((numberOfServers + byzantineFaultsTolerated) / 2.);
         connect();
 
@@ -297,6 +298,8 @@ public class ClientLibrary {
         return replies.stream().max(Comparator.comparing(DecryptedPayload::getMsgId)).get();
     }
 
+
+
     public DecryptedPayload writeBack(PrivateKey signKey, PublicKey authKey, AnnouncementsPayload receivedPayload) throws QuorumNotReachedException, IncorrectSignatureException {
         WriteBackPayload wb = new WriteBackPayload(authKey, Instant.now(),
                 signKey, receivedPayload);
@@ -305,6 +308,7 @@ public class ClientLibrary {
     }
 
     public DecryptedPayload receiveReply() throws QuorumNotReachedException, IncorrectSignatureException {
+        HashMap<Integer, List<DecryptedPayload>> received = new HashMap<>();
         List<DecryptedPayload> receivedPayloads = new ArrayList<>();
         for (ObjectInputStream in : ins) {
             try {
@@ -316,10 +320,44 @@ public class ClientLibrary {
 
                     throw new IncorrectSignatureException("Received reply with bad signature");
                 }
+
+                if (!received.containsKey(dp.getMsgId())) {
+                    List<DecryptedPayload> initial = new ArrayList<>(Arrays.asList(dp));
+                    received.put(dp.getMsgId(), initial);
+                } else {
+                    List<DecryptedPayload> receivedAtTimeT = received.get(dp.getMsgId());
+                    receivedAtTimeT.add(dp);
+                }
                 receivedPayloads.add(dp);
-                if (receivedPayloads.size() > repliesNecessaryForQuorum) {
+
+
+                if (receivedPayloads.size() > repliesNecessaryForQuorum && !dp.isRead()) {
                     return select(receivedPayloads);
                 }
+
+                if (dp.isRead()) {
+                    // this checks in the received Map which times have achieved quorum
+                    List<List<DecryptedPayload>> listOfQuorums = received.values().stream()
+                            .filter(decryptedPayloads -> decryptedPayloads.size() > repliesNecessaryForQuorum)
+                            .collect(Collectors.toList());
+
+                    // if atleast one time achieved quorum
+                    if (listOfQuorums.size() > 0) {
+                        // we assume that only one quorum is possible
+                        // since f <= N / 3 & Q > (N+f) / 2 (...) => Q > (4/6 * N)
+                        // so, atleast 4/6 of the servers must answer the same value
+
+                        // get first quorum (only one), and count each payload occurence
+                        Map<DecryptedPayload, Long> count = listOfQuorums.get(0).stream()
+                                .collect(Collectors.groupingBy(v -> v, Collectors.counting()));
+                        // pick the most common payload. Since quorum has been achieved, there is one payload
+                        Map.Entry<DecryptedPayload, Long> mostCommonPayload = Collections.max(count.entrySet(), Comparator.comparingLong(Map.Entry::getValue));
+                        // if the most common payload meets the number of occurrences desired, return it.
+                        if (mostCommonPayload.getValue() > repliesNecessaryForQuorum)
+                            return mostCommonPayload.getKey();
+                    }
+                }
+
 
             } catch (SocketTimeoutException ste) {
                 System.out.println("Timeout - ignoring...");

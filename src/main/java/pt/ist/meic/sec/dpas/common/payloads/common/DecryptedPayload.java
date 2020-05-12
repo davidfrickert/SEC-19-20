@@ -9,7 +9,6 @@ import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
-import java.util.Arrays;
 
 public abstract class DecryptedPayload implements Serializable {
 
@@ -71,7 +70,7 @@ public abstract class DecryptedPayload implements Serializable {
     }
 
     public boolean isRead() {
-        return Arrays.asList(Operation.READ, Operation.READ_GENERAL).contains(operation);
+        return operation == Operation.READ;
     }
 
     public boolean isWrite() {
