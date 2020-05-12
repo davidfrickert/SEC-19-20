@@ -25,6 +25,7 @@ import java.net.Socket;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -43,7 +44,7 @@ public class DPAServer {
 
     // incremented on each write on generalBoard
     private AtomicInteger generalWriteId;
-    private PublicKey nextAnnouncer;
+    private AbstractMap.SimpleEntry<Instant, PublicKey> nextAnnouncer;
 
     private KeyPair keyPair;
 
@@ -329,11 +330,13 @@ public class DPAServer {
                     return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
                             DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
                 } else {
-                    if (nextAnnouncer == null || nextAnnouncer != p.getSenderKey()) {
+                    // prevent deadlocks
+                    checkPrepareTimeout();
+                    if (nextAnnouncer == null || nextAnnouncer.getValue() != p.getSenderKey()) {
                         status = new StatusMessage(Status.PostInProgress, "Another post is in progress.");
                     }
                     else {
-                        nextAnnouncer = p.getSenderKey();
+                        nextAnnouncer = new AbstractMap.SimpleEntry<>(Instant.now(), p.getSenderKey());
                         status = new StatusMessage(Status.Success);
                     }
                     return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST_GENERAL_PREPARE, Instant.now(),
@@ -479,6 +482,12 @@ public class DPAServer {
 
     public int getGeneralWriteId() {
         return generalWriteId.get();
+    }
+    // clear nextAnnouncer if reserved for more than 5000 ms
+    public void checkPrepareTimeout() {
+        if (Duration.between(Instant.now(), nextAnnouncer.getKey()).toMillis() > 5000) {
+            nextAnnouncer = null;
+        }
     }
     public static int getPort() {
         return port;
