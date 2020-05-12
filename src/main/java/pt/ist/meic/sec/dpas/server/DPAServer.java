@@ -364,7 +364,7 @@ public class DPAServer {
                 }
             }
             return new AnnouncementsPayload(DPAServer.this.keyPair.getPublic(), Operation.READ, Instant.now(),
-                    statusMessage, DPAServer.this.getGeneralWriteId(), announcements, DPAServer.this.keyPair.getPrivate());
+                    statusMessage, announcements, DPAServer.this.keyPair.getPrivate());
 
         }
 
@@ -443,9 +443,7 @@ public class DPAServer {
 
         private DecryptedPayload handleGetLastTimestamp(GetLastTimestampPayload p) {
             logger.info("User " + p.getSenderKey().hashCode() + " attempted to get last timestamp (" + generalWriteId.get() + ") from general board.");
-            StatusMessage status;
-            status = new StatusMessage(Status.Success);
-            return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
+            return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), new StatusMessage(Status.Success),
                     DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
         }
     }
