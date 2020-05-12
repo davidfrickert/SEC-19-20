@@ -282,7 +282,7 @@ public class DPAServer {
 
         private DecryptedPayload handleReadCompleted(ReadCompletedPayload dp) {
             PublicKey boardKey = dp.getBoardReadFrom();
-            DPAServer.this.listenerMap.get(boardKey).add(dp.getSenderKey());
+            DPAServer.this.listenerMap.remove(boardKey).add(dp.getSenderKey());
             return null;
         }
 
