@@ -26,6 +26,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ClientLibrary {
     private final static Logger logger = Logger.getLogger(ClientLibrary.class);
@@ -285,6 +286,8 @@ public class ClientLibrary {
         return replies.stream().max(Comparator.comparing(DecryptedPayload::getMsgId)).get();
     }
 
+
+
     public DecryptedPayload writeBack(PrivateKey signKey, PublicKey authKey, AnnouncementsPayload receivedPayload) throws QuorumNotReachedException, IncorrectSignatureException {
         WriteBackPayload wb = new WriteBackPayload(authKey, Instant.now(),
                 signKey, receivedPayload);
@@ -316,21 +319,33 @@ public class ClientLibrary {
                 receivedPayloads.add(dp);
 
 
-                if (receivedPayloads.size() > repliesNecessaryForQuorum && dp.isWrite()) {
+                if (receivedPayloads.size() > repliesNecessaryForQuorum && !dp.isRead()) {
                     return select(receivedPayloads);
                 }
 
-                long uniquePayloadsReceived = received.values().stream()
-                        .filter(decryptedPayloads -> decryptedPayloads.size() > repliesNecessaryForQuorum)
-                        .distinct()
-                        .count();
+                if (dp.isRead()) {
+                    // this checks in the received Map which times have achieved quorum
+                    List<List<DecryptedPayload>> listOfQuorums = received.values().stream()
+                            .filter(decryptedPayloads -> decryptedPayloads.size() > repliesNecessaryForQuorum)
+                            .collect(Collectors.toList());
 
+                    // if atleast one time achieved quorum
+                    if (listOfQuorums.size() > 0) {
+                        // we assume that only one quorum is possible
+                        // since f <= N / 3 & Q > (N+f) / 2 (...) => Q > (4/6 * N)
+                        // so, atleast 4/6 of the servers must answer the same value
 
-                boolean readComplete = uniquePayloadsReceived > 0 && uniquePayloadsReceived <= 2;
-
-                if (readComplete) {
-                    System.out.println("i recv");
+                        // get first quorum (only one), and count each payload occurence
+                        Map<DecryptedPayload, Long> count = listOfQuorums.get(0).stream()
+                                .collect(Collectors.groupingBy(v -> v, Collectors.counting()));
+                        // pick the most common payload. Since quorum has been achieved, there is one payload
+                        Map.Entry<DecryptedPayload, Long> mostCommonPayload = Collections.max(count.entrySet(), Comparator.comparingLong(Map.Entry::getValue));
+                        // if the most common payload meets the number of occurrences desired, return it.
+                        if (mostCommonPayload.getValue() > repliesNecessaryForQuorum)
+                            return mostCommonPayload.getKey();
+                    }
                 }
+
 
             } catch (SocketTimeoutException ste) {
                 System.out.println("Timeout - ignoring...");
