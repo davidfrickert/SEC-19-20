@@ -32,7 +32,7 @@ public class DAO<T, ID extends Serializable> implements IDAO<T, ID>{
         this.type = t;
     }
 
-    public boolean persist(final Object o) {
+    public synchronized boolean persist(final Object o) {
         this.openSessionWithTransaction();
         try {
             session.save(o);

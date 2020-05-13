@@ -497,11 +497,14 @@ public class DPAServer {
     public int getGeneralWriteId() {
         return generalWriteId.get();
     }
-    // clear nextAnnouncer if reserved for more than 5000 ms
+    // clear nextAnnouncer if reserved for more than 3000 ms
     public void checkPrepareTimeout() {
+        long timeout = 3000;
         if (nextAnnouncer != null)
-            if (Duration.between(Instant.now(), nextAnnouncer.getKey()).toMillis() > 5000)
+            if (Duration.between(nextAnnouncer.getKey(), Instant.now()).toMillis() > timeout) {
+                logger.info("Released next announcer.");
                 nextAnnouncer = null;
+            }
     }
     public static int getPort() {
         return port;
