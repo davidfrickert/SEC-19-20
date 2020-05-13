@@ -69,6 +69,13 @@ public class ClientExample {
         }
         library = new ClientLibrary();
         library.start(host.getHostName(), serverPort);
+        try {
+            library.getID(keyPair.getPublic(), keyPair.getPrivate());
+        } catch (QuorumNotReachedException e) {
+            e.printStackTrace();
+        } catch (IncorrectSignatureException e) {
+            e.printStackTrace();
+        }
     }
 
     public void input(InputStream src) {

@@ -42,7 +42,7 @@ public class ClientLibrary {
     private String ip;
     private int port;
     // N from N > 3f
-    private static final int numberOfServers = 5;
+    private static final int numberOfServers = 2;
     // f from f <= N / 3
     private int byzantineFaultsTolerated;
     // Q = (N+f)/2
@@ -154,7 +154,7 @@ public class ClientLibrary {
             if (e.isRead())
                 e.setMsgId(readId++);
             else if (e.isWrite())
-                e.setMsgId(writeId++);
+                e.setMsgId(++writeId);
             else if (e.isGeneralBoardPrepare())
                 e.setMsgId(gbWriteId);
             else if (e.isGeneralBoardWrite()) {
@@ -235,6 +235,23 @@ public class ClientLibrary {
         DecryptedPayload sent = createReadPayload(authKey, null, number, signKey, op);
         write(sent);
         return sent;
+    }
+
+    public void getID(PublicKey key, PrivateKey privateKey) throws QuorumNotReachedException, IncorrectSignatureException {
+        DecryptedPayload getID = createGetIDrPayload(key, privateKey);
+        write(getID);
+        DecryptedPayload received = receiveReply();
+        ACKPayload lts = (ACKPayload) received;
+        readId = received.getMsgId();
+        writeId = received.getMsgId();
+        System.out.println("ID ATUAL: " + received.getMsgId());
+    }
+
+    public DecryptedPayload createGetIDrPayload(PublicKey authKey, PrivateKey signKey) {
+        logger.info("Attempting REGISTER");
+        Instant time = Instant.now();
+
+        return new GetIdPayload(authKey, time, signKey);
     }
 
     /**

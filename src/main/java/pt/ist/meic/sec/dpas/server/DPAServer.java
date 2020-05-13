@@ -1,5 +1,6 @@
 package pt.ist.meic.sec.dpas.server;
 
+import com.sun.net.httpserver.Authenticator;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;
@@ -54,7 +55,9 @@ public class DPAServer {
     private UserDAO userDAO = new UserDAO();
     private DAO<PayloadHistory, Long> payloadDAO = new DAO<>(PayloadHistory.class);
 
-    private static HashMap<PublicKey, Integer> atomicRegister = new HashMap<>();
+    private HashMap<PublicKey, Integer> atomicRegister = new HashMap<>();
+
+    private HashMap<PublicKey, Integer> savedIDs = new HashMap<>();
 
     public DPAServer(int serverPort, String keyPath, String keyStorePassword) {
         try {
@@ -225,10 +228,8 @@ public class DPAServer {
                                 case READ_GENERAL:
                                 case WRITE_BACK:
                                 case GET_LAST_TIMESTAMP:
-                                case VALUE:
-                                case ACK:
-                                case READ_COMPLETED:
                                 case POST_GENERAL_PREPARE:
+                                case GET_ID:
                                     yield defaultErrorMessage(Status.InvalidSignature, "Invalid Signature.", o, dp.getSenderKey());
                             };
                             e.setMsgId(dp.getMsgId());
@@ -250,17 +251,17 @@ public class DPAServer {
                                     case READ_GENERAL -> handleReadGeneral((ReadPayload) dp);
                                     case GET_LAST_TIMESTAMP -> handleGetLastTimestamp((GetLastTimestampPayload) dp);
                                     case WRITE_BACK -> handleWriteBack((WriteBackPayload) dp);
-                                    case ACK -> null;
-                                    case READ_COMPLETED -> handleReadCompleted((ReadCompletedPayload) dp);
                                     case POST_GENERAL_PREPARE -> handlePostGeneralPrepare((PostGeneralPreparePayload) dp);
-                                    case VALUE -> null;
+                                    case GET_ID -> handleGetId((GetIdPayload) dp);
                                 };
                             } else {
                                 e = defaultErrorMessage(Status.NotFresh, "Message already received.",
                                         dp.getOperation(), dp.getSenderKey());
                             }
                             if(e != null){
-                                e.setMsgId(dp.getMsgId());
+                                if(dp.getOperation() != Operation.GET_ID){
+                                    e.setMsgId(dp.getMsgId());
+                                }
                                 outStream.writeObject(e);
                             }
                         }
@@ -282,9 +283,16 @@ public class DPAServer {
             }
         }
 
-        private DecryptedPayload handleReadCompleted(ReadCompletedPayload dp) {
-            PublicKey boardKey = dp.getBoardReadFrom();
-            return null;
+        private DecryptedPayload handleGetId(GetIdPayload dp) {
+            int id = 0;
+            if(savedIDs.containsKey(dp.getSenderKey())){
+                id = savedIDs.get(dp.getSenderKey());
+            }
+            System.out.println("ID ANTERIOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOR: " + id);
+            DecryptedPayload result = new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST, Instant.now(),
+                    new StatusMessage(Status.Success), DPAServer.this.keyPair.getPrivate());
+            result.setMsgId(id);
+            return result;
         }
 
         private DecryptedPayload handlePost(PostPayload p) {
@@ -292,10 +300,15 @@ public class DPAServer {
             Optional<UserBoard> optUB = getUserBoard(p.getSenderKey());
             boolean success;
             StatusMessage status;
+            savedIDs.put(p.getSenderKey(), p.getMsgId());
+            System.out.println(p.getMsgId());
+            System.out.println("NOVO WRITE IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIID: " + savedIDs.get(p.getSenderKey()));
+            if(!atomicRegister.containsKey(p.getSenderKey())){
+                atomicRegister.put(p.getSenderKey(), 0);
+            }
 
-            //atomic register process
             int writeId = p.getMsgId();
-            if (writeId < DPAServer.this.atomicRegister.get(p.getSenderKey())) {
+            if (writeId < atomicRegister.get(p.getSenderKey())) {
                 status = new StatusMessage(Status.InvalidRequest, "Board has newer messages.");
                 return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
                         DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
@@ -308,8 +321,8 @@ public class DPAServer {
                     if (allExists) {
                         success = announcementDAO.safeInsert(a);
                         if (success) {
-                            DPAServer.this.atomicRegister.put(p.getSenderKey(),
-                                    DPAServer.this.atomicRegister.get(p.getSenderKey()) + 1);
+                            atomicRegister.put(p.getSenderKey(),
+                                    atomicRegister.get(p.getSenderKey()) + 1);
                             ub.appendAnnouncement(a);
                             status = new StatusMessage(Status.Success);
                         }  else status = new StatusMessage(Status.InvalidRequest, "Announcement already exists.");
@@ -463,6 +476,7 @@ public class DPAServer {
                 UserBoard userBoard = new UserBoard(u.getPublicKey());
                 allBoards.put(u.getPublicKey(), userBoard);
                 userBoardDAO.persist(userBoard);
+                System.out.println("VOU POOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOR");
                 atomicRegister.put(p.getSenderKey(), 0);
             }
             return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.REGISTER, Instant.now(),
