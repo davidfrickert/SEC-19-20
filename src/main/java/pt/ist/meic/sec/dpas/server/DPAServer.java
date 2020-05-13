@@ -501,9 +501,9 @@ public class DPAServer {
     }
     // clear nextAnnouncer if reserved for more than 5000 ms
     public void checkPrepareTimeout() {
-        if (Duration.between(Instant.now(), nextAnnouncer.getKey()).toMillis() > 5000) {
-            nextAnnouncer = null;
-        }
+        if (nextAnnouncer != null)
+            if (Duration.between(Instant.now(), nextAnnouncer.getKey()).toMillis() > 5000)
+                nextAnnouncer = null;
     }
     public static int getPort() {
         return port;
