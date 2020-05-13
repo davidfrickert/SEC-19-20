@@ -154,7 +154,7 @@ public class ClientLibrary {
             if (e.isRead())
                 e.setMsgId(readId++);
             else if (e.isWrite())
-                e.setMsgId(++writeId);
+                e.setMsgId(writeId++);
             else if (e.isGeneralBoardPrepare())
                 e.setMsgId(gbWriteId);
             else if (e.isGeneralBoardWrite()) {
@@ -203,6 +203,14 @@ public class ClientLibrary {
     public DecryptedPayload post(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
         Operation op = Operation.POST;
         DecryptedPayload sentEncrypted = createPostPayload(authKey, message, announcements, signKey, op);
+        write(sentEncrypted);
+        return sentEncrypted;
+    }
+
+    public DecryptedPayload faultypost(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
+        Operation op = Operation.POST;
+        DecryptedPayload sentEncrypted = createPostPayload(authKey, message, announcements, signKey, op);
+        writeId = writeId - 2;
         write(sentEncrypted);
         return sentEncrypted;
     }

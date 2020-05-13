@@ -152,6 +152,12 @@ public class ClientExample {
                 LinkedHashSet<BigInteger> prevAnnouncements = getPreviousAnnouncement(data);
                 yield library.post(keyPair.getPublic(), announcement, prevAnnouncements, keyPair.getPrivate());
             }
+            case "faultypost" -> {
+                String announcement = getAnnouncement(data);
+                LinkedHashSet<BigInteger> prevAnnouncements = getPreviousAnnouncement(data);
+                DecryptedPayload fDB = library.faultypost(keyPair.getPublic(), announcement, prevAnnouncements, keyPair.getPrivate());
+                yield fDB;
+            }
             case "postgeneral" -> {
                 String announcementGeneral = getAnnouncement(data);
                 LinkedHashSet<BigInteger> prevAnnouncementsGen = getPreviousAnnouncement(data);

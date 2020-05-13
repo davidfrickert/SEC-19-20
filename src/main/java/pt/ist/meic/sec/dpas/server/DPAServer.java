@@ -308,6 +308,7 @@ public class DPAServer {
             }
 
             int writeId = p.getMsgId();
+            System.out.println("WRITE ID DA MESSGAEMENJNSJNDJSNNSAND: " + writeId);
             if (writeId < atomicRegister.get(p.getSenderKey())) {
                 status = new StatusMessage(Status.InvalidRequest, "Board has newer messages.");
                 return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
