@@ -1,6 +1,5 @@
 package pt.ist.meic.sec.dpas.server;
 
-import com.sun.net.httpserver.Authenticator;
 import org.apache.log4j.Logger;
 import pt.ist.meic.sec.dpas.common.Operation;
 import pt.ist.meic.sec.dpas.common.Status;

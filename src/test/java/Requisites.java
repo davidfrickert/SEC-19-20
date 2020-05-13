@@ -1,12 +1,10 @@
 import org.testng.annotations.Test;
 import pt.ist.meic.sec.dpas.client.ClientExample;
 import pt.ist.meic.sec.dpas.common.Status;
-import pt.ist.meic.sec.dpas.common.payloads.common.DecryptedPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.ACKPayload;
 import pt.ist.meic.sec.dpas.common.payloads.reply.AnnouncementsPayload;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.IncorrectSignatureException;
 import pt.ist.meic.sec.dpas.common.utils.exceptions.QuorumNotReachedException;
-import pt.ist.meic.sec.dpas.server.DPAServer;
 
 import java.util.Base64;
 
@@ -19,6 +17,7 @@ public class Requisites {
 
     ClientExample c1 = new ClientExample("test1", "keys/private/clients/1.p12", "client1", 35000);
     ClientExample c2 = new ClientExample("test2", "keys/private/clients/2.p12", "client2", 35000);
+    ClientExample c3 = new ClientExample("test1", "keys/private/clients/1.p12", "client1", 35000);
 
     @Test(priority = 1)
     public void testRegister(){
@@ -218,6 +217,64 @@ public class Requisites {
     }
 
     @Test(priority = 5)
+    public void testPostConcurrency() {
+        String pkClient1 = Base64.getEncoder().encodeToString(c1.getPublicKey().getEncoded());
+        String pkClient2 = Base64.getEncoder().encodeToString(c2.getPublicKey().getEncoded());
+        String command1 = "post it's a race!";
+        String command2 = "post i'll get there first.. maybe?";
+        String command3 = "read " +  pkClient1 + " 1";
+
+        try {
+            new Thread(() -> {
+                try {
+                    c1.doAction(command1);
+                    ACKPayload received1 = (ACKPayload) c1.getResponse();
+                    while (received1.getStatus().getStatus() == Status.OldID) {
+                        c1.doAction(command1);
+                        received1 = (ACKPayload) c1.getResponse();
+                    }
+                    assertEquals(received1.getStatus().getStatus(), Status.Success);
+                }
+                catch (QuorumNotReachedException | IncorrectSignatureException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+            Thread.sleep(20);
+
+            new Thread(() -> {
+                try {
+                    c3.doAction(command2);
+                    ACKPayload received2 = (ACKPayload) c3.getResponse();
+                    while (received2.getStatus().getStatus() == Status.OldID) {
+                        c3.doAction(command1);
+                        received2 = (ACKPayload) c3.getResponse();
+                    }
+                    assertEquals(received2.getStatus().getStatus(), Status.InvalidRequest);
+                } catch (QuorumNotReachedException | IncorrectSignatureException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+            Thread.sleep(5000);
+
+            try {
+                c1.doAction(command3);
+                AnnouncementsPayload received3 = (AnnouncementsPayload) c1.getResponse();
+                assertEquals(received3.getAnnouncements().size(), 1);
+                assertEquals(received3.getAnnouncements().get(0).getMessage(), "it's a race!");
+                assertEquals(received3.getStatus().getStatus(), Status.Success);
+            } catch (QuorumNotReachedException | IncorrectSignatureException e) {
+                fail();
+                e.printStackTrace();
+            }
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test(priority = 6)
     public void testByzantineFaults() throws QuorumNotReachedException, IncorrectSignatureException {
         String pkClient2 = Base64.getEncoder().encodeToString(c2.getPublicKey().getEncoded());
         String command1 = "faultyPost faulty hello";
