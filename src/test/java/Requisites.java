@@ -37,7 +37,6 @@ public class Requisites {
             fail();
             e.printStackTrace();
         }
-
     }
 
     @Test(priority = 2)
@@ -62,7 +61,7 @@ public class Requisites {
                 }
             }).start();
 
-            Thread.sleep(10);
+            Thread.sleep(20);
 
             new Thread(() -> {
                 try {
@@ -78,7 +77,7 @@ public class Requisites {
                 }
             }).start();
 
-            Thread.sleep(4000);
+            Thread.sleep(1000);
 
             try {
                 c1.doAction(command3);
