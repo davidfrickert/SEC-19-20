@@ -46,6 +46,7 @@ public class DPAServer {
     // incremented on each write on generalBoard
     private AtomicInteger generalWriteId;
     private AbstractMap.SimpleEntry<Instant, PublicKey> nextAnnouncer;
+    private final Object lock = new Object();
 
     private KeyPair keyPair;
 
@@ -335,7 +336,7 @@ public class DPAServer {
         }
 
         private DecryptedPayload handlePostGeneralPrepare(PostGeneralPreparePayload p) {
-            synchronized (generalWriteId) {
+            synchronized (lock) {
                 StatusMessage status;
                 int writeId = p.getMsgId();
                 logger.info("User " + p.getSenderKey().hashCode() + " prepared post in General Board with " + writeId + " message ID!");
@@ -360,7 +361,7 @@ public class DPAServer {
         }
 
         private DecryptedPayload handlePostGeneral(PostPayload p) {
-            synchronized (generalWriteId) {
+            synchronized (lock) {
                 StatusMessage status;
                 int writeId = p.getMsgId();
                 logger.info("User " + p.getSenderKey().hashCode() + " attempted to post in General Board with " + writeId + " message ID!");
@@ -485,9 +486,11 @@ public class DPAServer {
         }
 
         private DecryptedPayload handleGetLastTimestamp(GetLastTimestampPayload p) {
-            logger.info("User " + p.getSenderKey().hashCode() + " attempted to get last timestamp (" + generalWriteId.get() + ") from general board.");
-            return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), new StatusMessage(Status.Success),
-                    DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
+            synchronized (lock) {
+                logger.info("User " + p.getSenderKey().hashCode() + " attempted to get last timestamp (" + generalWriteId.get() + ") from general board.");
+                return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), new StatusMessage(Status.Success),
+                        DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
+            }
         }
     }
 

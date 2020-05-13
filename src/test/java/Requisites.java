@@ -40,8 +40,62 @@ public class Requisites {
 
     }
 
-
     @Test(priority = 2)
+    public void testPostGeneralConcurrency() {
+        String command1 = "postgeneral it's a race!";
+        String command2 = "postgeneral i'll get there first.. maybe?";
+        String command3 = "readgeneral 2";
+
+        try {
+            new Thread(() -> {
+                try {
+                    c1.doAction(command1);
+                    ACKPayload received1 = (ACKPayload) c1.getResponse();
+                    while (received1.getStatus().getStatus() == Status.OldID) {
+                        c1.doAction(command1);
+                        received1 = (ACKPayload) c1.getResponse();
+                    }
+                    assertEquals(received1.getStatus().getStatus(), Status.Success);
+                }
+                catch (QuorumNotReachedException | IncorrectSignatureException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+            Thread.sleep(10);
+
+            new Thread(() -> {
+                try {
+                    c2.doAction(command2);
+                    ACKPayload received2 = (ACKPayload) c2.getResponse();
+                    while (received2.getStatus().getStatus() == Status.OldID) {
+                        c2.doAction(command1);
+                        received2 = (ACKPayload) c2.getResponse();
+                    }
+                    assertEquals(received2.getStatus().getStatus(), Status.Success);
+                } catch (QuorumNotReachedException | IncorrectSignatureException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+            Thread.sleep(4000);
+
+            try {
+                c1.doAction(command3);
+                AnnouncementsPayload received3 = (AnnouncementsPayload) c1.getResponse();
+                assertEquals(received3.getAnnouncements().size(), 2);
+                assertEquals(received3.getStatus().getStatus(), Status.Success);
+            } catch (QuorumNotReachedException | IncorrectSignatureException e) {
+                fail();
+                e.printStackTrace();
+            }
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test(priority = 3)
     public void testPostAndReadGeneral() {
         String command1 = "postgeneral hello world";
         String command2 = "postgeneral hello void | 0";
@@ -71,7 +125,7 @@ public class Requisites {
 
     }
 
-    @Test(priority = 3)
+    @Test(priority = 4)
     public void testPostAndRead(){
         String pkClient1 = Base64.getEncoder().encodeToString(c1.getPublicKey().getEncoded());
         String pkClient2 = Base64.getEncoder().encodeToString(c2.getPublicKey().getEncoded());
@@ -162,49 +216,6 @@ public class Requisites {
             fail();
             e.printStackTrace();
         }
-    }
-
-    @Test(priority = 4)
-    public void testPostGeneralConcurrency() {
-        String command1 = "postgeneral it's a race!";
-        String command2 = "postgeneral i'll get there first.. maybe?";
-        
-        try {
-            new Thread(() -> {
-                try {
-                    c1.doAction(command1);
-                    ACKPayload received1 = (ACKPayload) c1.getResponse();
-                    while (received1.getStatus().getStatus() == Status.OldID) {
-                        c1.doAction(command1);
-                        received1 = (ACKPayload) c1.getResponse();
-                    }
-                    assertEquals(received1.getStatus().getStatus(), Status.Success);
-                }
-                catch (QuorumNotReachedException | IncorrectSignatureException e) {
-                    e.printStackTrace();
-                }
-            }).start();
-
-            new Thread(() -> {
-                try {
-                    c2.doAction(command2);
-                    ACKPayload received2 = (ACKPayload) c2.getResponse();
-                    while (received2.getStatus().getStatus() == Status.OldID) {
-                        c2.doAction(command1);
-                        received2 = (ACKPayload) c2.getResponse();
-                    }
-                    assertEquals(received2.getStatus().getStatus(), Status.Success);
-                } catch (QuorumNotReachedException | IncorrectSignatureException e) {
-                    e.printStackTrace();
-                }
-            }).start();
-
-            Thread.sleep(6000);
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
     }
 
     @Test(priority = 5)
