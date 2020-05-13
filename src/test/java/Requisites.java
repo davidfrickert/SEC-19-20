@@ -19,6 +19,7 @@ public class Requisites {
 
     ClientExample c1 = new ClientExample("test1", "keys/private/clients/1.p12", "client1", 35000);
     ClientExample c2 = new ClientExample("test2", "keys/private/clients/2.p12", "client2", 35000);
+    ClientExample c3 = new ClientExample("test3", "keys/private/clients/3.p12", "client3", 35000);
 
     @Test(priority = 1)
     public void testRegister(){
@@ -33,6 +34,10 @@ public class Requisites {
             c2.doAction(command1);
             ACKPayload received2 = (ACKPayload) c2.getResponse();
             assertEquals(received2.getStatus().getStatus(), Status.Success);
+
+            c3.doAction(command1);
+            ACKPayload received3 = (ACKPayload) c3.getResponse();
+            assertEquals(received3.getStatus().getStatus(), Status.Success);
         } catch (QuorumNotReachedException | IncorrectSignatureException e) {
             fail();
             e.printStackTrace();
@@ -40,7 +45,7 @@ public class Requisites {
     }
 
     @Test(priority = 2)
-    public void testPostGeneralConcurrency() {
+    public void testPostGeneralTwoWayConcurrency() {
         String command1 = "postgeneral it's a race!";
         String command2 = "postgeneral i'll get there first.. maybe?";
         String command3 = "readgeneral 2";
@@ -60,8 +65,6 @@ public class Requisites {
                     e.printStackTrace();
                 }
             }).start();
-
-            Thread.sleep(20);
 
             new Thread(() -> {
                 try {
@@ -94,7 +97,7 @@ public class Requisites {
         }
     }
 
-    @Test(priority = 3)
+    @Test(priority = 4)
     public void testPostAndReadGeneral() {
         String command1 = "postgeneral hello world";
         String command2 = "postgeneral hello void | 0";
@@ -125,6 +128,63 @@ public class Requisites {
     }
 
     @Test(priority = 4)
+    public void testPostGeneralDeadlock() {
+        String command1 = "postgeneral we are";
+        String command2 = "postgeneral the three";
+        String command3 = "postgeneral evil brothers";
+
+        try {
+            new Thread(() -> {
+                try {
+                    c1.doAction(command1);
+                    ACKPayload received1 = (ACKPayload) c1.getResponse();
+                    while (received1.getStatus().getStatus() == Status.OldID) {
+                        c1.doAction(command1);
+                        received1 = (ACKPayload) c1.getResponse();
+                    }
+                    assertEquals(received1.getStatus().getStatus(), Status.Success);
+                }
+                catch (QuorumNotReachedException | IncorrectSignatureException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+            new Thread(() -> {
+                try {
+                    c2.doAction(command2);
+                    ACKPayload received2 = (ACKPayload) c2.getResponse();
+                    while (received2.getStatus().getStatus() == Status.OldID) {
+                        c2.doAction(command2);
+                        received2 = (ACKPayload) c2.getResponse();
+                    }
+                    assertEquals(received2.getStatus().getStatus(), Status.Success);
+                } catch (QuorumNotReachedException | IncorrectSignatureException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+            new Thread(() -> {
+                try {
+                    c3.doAction(command3);
+                    ACKPayload received3 = (ACKPayload) c3.getResponse();
+                    while (received3.getStatus().getStatus() == Status.OldID) {
+                        c3.doAction(command3);
+                        received3 = (ACKPayload) c3.getResponse();
+                    }
+                    assertEquals(received3.getStatus().getStatus(), Status.Success);
+                } catch (QuorumNotReachedException | IncorrectSignatureException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+            Thread.sleep(7000);
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test(priority = 5)
     public void testPostAndRead(){
         String pkClient1 = Base64.getEncoder().encodeToString(c1.getPublicKey().getEncoded());
         String pkClient2 = Base64.getEncoder().encodeToString(c2.getPublicKey().getEncoded());
@@ -217,7 +277,7 @@ public class Requisites {
         }
     }
 
-    @Test(priority = 5)
+    @Test(priority = 6)
     public void testByzantineFaults() throws QuorumNotReachedException, IncorrectSignatureException {
         String pkClient2 = Base64.getEncoder().encodeToString(c2.getPublicKey().getEncoded());
         String command1 = "faultyPost faulty hello";
