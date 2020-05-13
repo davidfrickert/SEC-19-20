@@ -42,7 +42,7 @@ public class ClientLibrary {
     private String ip;
     private int port;
     // N from N > 3f
-    private static final int numberOfServers = 2;
+    private static final int numberOfServers = 5;
     // f from f <= N / 3
     private int byzantineFaultsTolerated;
     // Q = (N+f)/2
