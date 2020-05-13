@@ -69,6 +69,13 @@ public class ClientExample {
         }
         library = new ClientLibrary();
         library.start(host.getHostName(), serverPort);
+        try {
+            library.getID(keyPair.getPublic(), keyPair.getPrivate());
+        } catch (QuorumNotReachedException e) {
+            e.printStackTrace();
+        } catch (IncorrectSignatureException e) {
+            e.printStackTrace();
+        }
     }
 
     public void input(InputStream src) {
@@ -144,6 +151,12 @@ public class ClientExample {
                 String announcement = getAnnouncement(data);
                 LinkedHashSet<BigInteger> prevAnnouncements = getPreviousAnnouncement(data);
                 yield library.post(keyPair.getPublic(), announcement, prevAnnouncements, keyPair.getPrivate());
+            }
+            case "faultypost" -> {
+                String announcement = getAnnouncement(data);
+                LinkedHashSet<BigInteger> prevAnnouncements = getPreviousAnnouncement(data);
+                DecryptedPayload fDB = library.faultypost(keyPair.getPublic(), announcement, prevAnnouncements, keyPair.getPrivate());
+                yield fDB;
             }
             case "postgeneral" -> {
                 String announcementGeneral = getAnnouncement(data);

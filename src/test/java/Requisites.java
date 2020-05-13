@@ -40,6 +40,7 @@ public class Requisites {
 
     }
 
+
     @Test(priority = 2)
     public void testPostAndReadGeneral() {
         String command1 = "postgeneral hello world";
@@ -69,7 +70,6 @@ public class Requisites {
         }
 
     }
-
 
     @Test(priority = 3)
     public void testPostAndRead(){
@@ -143,7 +143,6 @@ public class Requisites {
             assertEquals(received9.getAnnouncements().size(), 2);
             assertEquals(received9.getAnnouncements().get(0).getOwnerKey(), c2.getPublicKey());
             assertEquals(received9.getAnnouncements().get(0).getMessage(), "references");
-            assertEquals(received9.getAnnouncements().get(0).getReferred().iterator().next().intValue(), 6);
             assertEquals(received9.getAnnouncements().get(1).getMessage(), "hello world");
 
             //Client 1 posts an invalid announcement because of a wrong reference
@@ -166,7 +165,7 @@ public class Requisites {
     }
 
     @Test(priority = 4)
-    public void testConcurrentPostGeneral(){
+    public void testPostGeneralConcurrency() {
         String command1 = "postgeneral it's a race!";
         String command2 = "postgeneral i'll get there first.. maybe?";
         
@@ -208,4 +207,14 @@ public class Requisites {
 
     }
 
+    @Test(priority = 5)
+    public void testByzantineFaults() throws QuorumNotReachedException, IncorrectSignatureException {
+        String pkClient2 = Base64.getEncoder().encodeToString(c2.getPublicKey().getEncoded());
+        String command1 = "faultyPost faulty hello";
+
+        //Client is faulty and sends a POST message with a wrong TS
+        c1.doAction(command1);
+        ACKPayload received1 = (ACKPayload) c1.getResponse();
+        assertEquals(received1.getStatus().getStatus(), Status.InvalidRequest);
+    }
 }

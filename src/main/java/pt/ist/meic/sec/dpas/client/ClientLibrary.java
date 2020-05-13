@@ -42,7 +42,7 @@ public class ClientLibrary {
     private String ip;
     private int port;
     // N from N > 3f
-    private static final int numberOfServers = 5;
+    private static final int numberOfServers = 2;
     // f from f <= N / 3
     private int byzantineFaultsTolerated;
     // Q = (N+f)/2
@@ -207,6 +207,14 @@ public class ClientLibrary {
         return sentEncrypted;
     }
 
+    public DecryptedPayload faultypost(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
+        Operation op = Operation.POST;
+        DecryptedPayload sentEncrypted = createPostPayload(authKey, message, announcements, signKey, op);
+        writeId = writeId - 2;
+        write(sentEncrypted);
+        return sentEncrypted;
+    }
+
     public DecryptedPayload postGeneral(PublicKey authKey, String message, LinkedHashSet<BigInteger> announcements, PrivateKey signKey) {
         Operation op = Operation.POST_GENERAL;
         DecryptedPayload sentEncrypted = createPostPayload(authKey, message, announcements, signKey, op);
@@ -236,6 +244,23 @@ public class ClientLibrary {
         DecryptedPayload sent = createReadPayload(authKey, null, number, signKey, op);
         write(sent);
         return sent;
+    }
+
+    public void getID(PublicKey key, PrivateKey privateKey) throws QuorumNotReachedException, IncorrectSignatureException {
+        DecryptedPayload getID = createGetIDrPayload(key, privateKey);
+        write(getID);
+        DecryptedPayload received = receiveReply();
+        ACKPayload lts = (ACKPayload) received;
+        readId = received.getMsgId();
+        writeId = received.getMsgId();
+        System.out.println("ID ATUAL: " + received.getMsgId());
+    }
+
+    public DecryptedPayload createGetIDrPayload(PublicKey authKey, PrivateKey signKey) {
+        logger.info("Attempting REGISTER");
+        Instant time = Instant.now();
+
+        return new GetIdPayload(authKey, time, signKey);
     }
 
     /**
