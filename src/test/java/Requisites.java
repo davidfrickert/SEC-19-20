@@ -77,7 +77,7 @@ public class Requisites {
                 }
             }).start();
 
-            Thread.sleep(1000);
+            Thread.sleep(5000);
 
             try {
                 c1.doAction(command3);

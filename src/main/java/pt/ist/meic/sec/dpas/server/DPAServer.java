@@ -289,7 +289,6 @@ public class DPAServer {
             if(savedIDs.containsKey(dp.getSenderKey())){
                 id = savedIDs.get(dp.getSenderKey());
             }
-            System.out.println("ID ANTERIOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOR: " + id);
             DecryptedPayload result = new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.POST, Instant.now(),
                     new StatusMessage(Status.Success), DPAServer.this.keyPair.getPrivate());
             result.setMsgId(id);
@@ -302,14 +301,11 @@ public class DPAServer {
             boolean success;
             StatusMessage status;
             savedIDs.put(p.getSenderKey(), p.getMsgId());
-            System.out.println(p.getMsgId());
-            System.out.println("NOVO WRITE IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIID: " + savedIDs.get(p.getSenderKey()));
             if(!atomicRegister.containsKey(p.getSenderKey())){
                 atomicRegister.put(p.getSenderKey(), 0);
             }
 
             int writeId = p.getMsgId();
-            System.out.println("WRITE ID DA MESSGAEMENJNSJNDJSNNSAND: " + writeId);
             if (writeId < atomicRegister.get(p.getSenderKey())) {
                 status = new StatusMessage(Status.InvalidRequest, "Board has newer messages.");
                 return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
@@ -339,15 +335,15 @@ public class DPAServer {
             synchronized (lock) {
                 StatusMessage status;
                 int writeId = p.getMsgId();
-                logger.info("User " + p.getSenderKey().hashCode() + " prepared post in General Board with " + writeId + " message ID!");
                 if (writeId < DPAServer.this.getGeneralWriteId()) {
                     status = new StatusMessage(Status.OldID, "Board has newer messages.");
                     return new LastTimestampPayload(DPAServer.this.keyPair.getPublic(), Instant.now(), status,
                             DPAServer.this.getGeneralWriteId(), DPAServer.this.keyPair.getPrivate());
                 } else {
+                    logger.info("User " + p.getSenderKey().hashCode() + " prepared post in General Board with " + writeId + " message ID!");
                     // prevent deadlocks
                     checkPrepareTimeout();
-                    if (nextAnnouncer == null || nextAnnouncer.getValue() != p.getSenderKey()) {
+                    if (nextAnnouncer != null && nextAnnouncer.getValue() != p.getSenderKey()) {
                         status = new StatusMessage(Status.PostInProgress, "Another post is in progress.");
                     }
                     else {
@@ -478,7 +474,6 @@ public class DPAServer {
                 UserBoard userBoard = new UserBoard(u.getPublicKey());
                 allBoards.put(u.getPublicKey(), userBoard);
                 userBoardDAO.persist(userBoard);
-                System.out.println("VOU POOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOR");
                 atomicRegister.put(p.getSenderKey(), 0);
             }
             return new ACKPayload(DPAServer.this.keyPair.getPublic(), Operation.REGISTER, Instant.now(),

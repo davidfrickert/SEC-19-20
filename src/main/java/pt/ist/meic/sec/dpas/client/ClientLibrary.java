@@ -221,11 +221,15 @@ public class ClientLibrary {
         try {
             gbWriteId = getLastTimestamp(authKey, signKey);
             logger.info("Received write ID " + gbWriteId + " from server");
-            preparePostGeneral(authKey, signKey);
-        } catch (QuorumNotReachedException | IncorrectSignatureException e) {
+            while (!preparePostGeneral(authKey, signKey)) {
+                logger.info("Another user is attempting to post. Retrying...");
+                Thread.sleep(new Random().nextInt(2000));
+                gbWriteId = getLastTimestamp(authKey, signKey);
+            }
+        } catch (QuorumNotReachedException | IncorrectSignatureException | InterruptedException e) {
             e.printStackTrace();
         }
-
+        logger.info("Prepare statement complete.");
         write(sentEncrypted);
         return sentEncrypted;
     }
