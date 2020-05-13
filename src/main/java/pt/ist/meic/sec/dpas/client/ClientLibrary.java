@@ -299,8 +299,6 @@ public class ClientLibrary {
         return replies.stream().max(Comparator.comparing(DecryptedPayload::getMsgId)).get();
     }
 
-
-
     public DecryptedPayload writeBack(PrivateKey signKey, PublicKey authKey, AnnouncementsPayload receivedPayload) throws QuorumNotReachedException, IncorrectSignatureException {
         WriteBackPayload wb = new WriteBackPayload(authKey, Instant.now(),
                 signKey, receivedPayload);
