@@ -1,7 +1,7 @@
 # SEC-19-20
 Dependable Public Announcement Server
 
-## Build and run with Linux terminal
+## Build and run with Ubuntu terminal
 
 ### Requirements:
 ```
@@ -47,7 +47,7 @@ SET GLOBAL time_zone = '+1:00';
 
 2. Compile maven build: `mvn clean compile`
 
-3. Run server: `mvn exec:java@server -Dexec.args="[port] [keypath] [keyStorePassword]"`\
+3. Launch servers: `mvn exec:java@server -Dexec.args="[port] [keypath] [keyStorePassword]"`\
 Examples:
 ```
 mvn exec:java@server -Dexec.args="35000 keys/private/server/keystore1.p12 server1"
@@ -57,12 +57,12 @@ mvn exec:java@server -Dexec.args="35003 keys/private/server/keystore4.p12 server
 mvn exec:java@server -Dexec.args="35004 keys/private/server/keystore5.p12 server5"
 ```
 
-4. Run client: `mvn exec:java@client -Dexec.args="[username] [keypath] [keyStorePassword] [serverPort]"`\
+4. Launch clients: `mvn exec:java@client -Dexec.args="[username] [keypath] [keyStorePassword] [baseServerPort]"`\
 Examples:
 ```
 mvn exec:java@client -Dexec.args="test1 keys/private/clients/1.p12 client1 35000"
 mvn exec:java@client -Dexec.args="test2 keys/private/clients/2.p12 client2 35000"
-mvn exec:java@client -Dexec.args="test3 keys/private/clients/3.p12 client3 35001"
+mvn exec:java@client -Dexec.args="test3 keys/private/clients/3.p12 client3 35000"
 ```
 
 ### Run tests
@@ -71,10 +71,30 @@ mvn exec:java@client -Dexec.args="test3 keys/private/clients/3.p12 client3 35001
 
 2. Compile maven build: `mvn clean compile`
 
+3. Launch servers manually (as described in previous section)
+
 3. Run specification tests: `mvn test -Dtest=Requisites`
 
 4. Run Attacker tests: `mvn test -Dtest=Attacks`\
-\
 Or run all tests with `mvn test`.
+
+NOTE: Some test assertions are only useful if the databases are clean. You can run the following script:
+
+```
+mysql -u root -proot -e "show databases" -s |
+    egrep "dpas" |
+    xargs -I "@@" mysql -u root -proot -e "DROP DATABASE @@"
+```
+
+Or change the Hibernate configuration settings in `pt.ist.meic.sec.dpas.common.utils.HibernateConfig`:
+
+Change the line
+```
+properties.put("hibernate.hbm2ddl.auto", "update");
+```
+To
+```
+properties.put("hibernate.hbm2ddl.auto", "create");
+```
 
 
